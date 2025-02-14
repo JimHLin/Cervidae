@@ -3,6 +3,9 @@ REPO := "https://github.com" / "JimHLin" / PROJECT
 ROOT_DIR := justfile_directory()
 OUTPUT_DIR := ROOT_DIR / "target"
 
+set dotenv-load
+
+
 migrate:
     cargo run --bin migrate
 
