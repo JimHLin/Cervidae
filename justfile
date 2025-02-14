@@ -16,3 +16,7 @@ local-min:
 
 local-down:
     docker compose down -v
+
+local-dev:
+    local-min
+    migrate
