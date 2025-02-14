@@ -4,7 +4,7 @@ ROOT_DIR := justfile_directory()
 OUTPUT_DIR := ROOT_DIR / "target"
 
 migrate:
-    cargo run
+    cargo run --bin migrate
 
 export COMPOSE_PROJECT_NAME := "cervidae"
 
