@@ -29,8 +29,10 @@ async fn main() {
         .route("/", get(root))
         // `POST /users` goes to `create_user`
         .route("/user/create", post(create_user))
+        .route("/user", get(get_all_user))
         .route("/user/{:user_id}", get(get_user))
         .route("/deer/create", post(create_deer))
+        .route("/deer", get(get_all_deer))
         .route("/deer/{:deer_id}", get(get_deer))
         .route("/deer/update", patch(update_deer))
         .with_state(pool);
@@ -41,8 +43,29 @@ async fn main() {
 }
 
 // basic handler that responds with a static string
-async fn root() -> &'static str {
-    "Hello, World!"
+async fn root(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Deer>), (StatusCode, String)> {
+    let deer = sqlx::query_as!(
+        Deer,
+        "SELECT * FROM Cervidae WHERE kill_count IN (SELECT MAX(kill_count) FROM Cervidae)"
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+    if let Some(deer) = deer {
+        return Ok((StatusCode::OK, Json(deer)));
+    } else {
+        return Err((
+            StatusCode::NOT_FOUND,
+            "They're all dead. You are next.".to_string(),
+        ));
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -79,10 +102,19 @@ struct Deer {
 struct UpdateDeerInput {
     user_id: Uuid,
     id: Uuid,
-    name: String,
+    name: Option<String>,
     description: Option<String>,
     image_url: Option<String>,
     kill_count: Option<i32>,
+}
+
+impl UpdateDeerInput {
+    fn is_empty(&self) -> bool {
+        self.name.is_none()
+            && self.description.is_none()
+            && self.image_url.is_none()
+            && self.kill_count.is_none()
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -120,6 +152,22 @@ async fn create_user(
     })?;
 
     Ok((StatusCode::CREATED, user_id.to_string()))
+}
+
+async fn get_all_user(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
+    let users = sqlx::query_as!(User, "SELECT * FROM Users")
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, Json(users)))
 }
 
 async fn get_user(
@@ -168,6 +216,21 @@ async fn create_deer(
     Ok((StatusCode::CREATED, deer_id.to_string()))
 }
 
+async fn get_all_deer(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Vec<Deer>>), (StatusCode, String)> {
+    let deer = sqlx::query_as!(Deer, "SELECT * FROM Cervidae")
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+    Ok((StatusCode::OK, Json(deer)))
+}
+
 async fn get_deer(
     State(pool): State<PgPool>,
     Path(deer_id): Path<Uuid>,
@@ -188,19 +251,37 @@ async fn update_deer(
     State(pool): State<PgPool>,
     Json(deer): Json<UpdateDeerInput>,
 ) -> Result<(StatusCode, String), (StatusCode, String)> {
-    sqlx::query(
-        r#"UPDATE Cervidae SET name = $1, description = $2, image_url = $3, kill_count = $4,
-    updated_by = $5, updated_at = NOW() WHERE id = $6"#,
-    )
-    .bind(&deer.name)
-    .bind(&deer.description)
-    .bind(&deer.image_url)
-    .bind(&deer.kill_count)
-    .bind(&deer.user_id)
-    .bind(&deer.id)
-    .execute(&pool)
-    .await
-    .map_err(|e| {
+    if deer.is_empty() {
+        return Ok((
+            StatusCode::EXPECTATION_FAILED,
+            "No valid fields to update".to_string(),
+        ));
+    }
+
+    let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
+        sqlx::QueryBuilder::new("UPDATE Cervidae SET ");
+
+    query_builder.push("updated_by = ").push_bind(deer.user_id);
+    query_builder.push(", updated_at = NOW()");
+
+    if let Some(name) = &deer.name {
+        query_builder.push(", name = ").push_bind(name);
+    }
+    if let Some(description) = deer.description {
+        query_builder
+            .push(", description = ")
+            .push_bind(description);
+    }
+    if let Some(image_url) = deer.image_url {
+        query_builder.push(", image_url = ").push_bind(image_url);
+    }
+    if let Some(kill_count) = deer.kill_count {
+        query_builder.push(", kill_count = ").push_bind(kill_count);
+    }
+
+    query_builder.push(" WHERE id = ").push_bind(deer.id);
+    let query = query_builder.build();
+    query.execute(&pool).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Database error: {}", e),
