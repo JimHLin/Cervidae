@@ -21,5 +21,6 @@ local-down:
     docker compose down -v
 
 local-dev:
-    local-min
-    migrate
+    just local-min
+    just migrate
+    cargo run --bin Cervidae
