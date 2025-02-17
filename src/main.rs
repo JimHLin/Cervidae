@@ -31,6 +31,7 @@ async fn main() {
         .route("/user/create", post(create_user))
         .route("/user", get(get_all_user))
         .route("/user/{:user_id}", get(get_user))
+        .route("/user/update", patch(update_user))
         .route("/deer/create", post(create_deer))
         .route("/deer", get(get_all_deer))
         .route("/deer/{:deer_id}", get(get_deer))
@@ -77,12 +78,27 @@ struct CreateUserInput {
 }
 
 #[derive(Deserialize, Serialize)]
+struct UpdateUserInput {
+    id: Uuid,
+    name: Option<String>,
+    email: Option<String>,
+    password: Option<String>,
+}
+
+impl UpdateUserInput {
+    fn is_empty(&self) -> bool {
+        self.name.is_none() && self.email.is_none() && self.password.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
 struct User {
     id: Uuid,
     name: String,
     email: String,
     password: String,
     created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -128,6 +144,19 @@ struct CreateDeerInput {
 
 struct DeerError(StatusCode, String);
 
+fn add_to_query<'b, 'a, T>(
+    query_builder: &'b mut sqlx::QueryBuilder<'a, sqlx::Postgres>,
+    key: &str,
+    value: &'a T,
+) where
+    T: sqlx::Encode<'a, sqlx::Postgres> + sqlx::Type<sqlx::Postgres> + 'a,
+{
+    query_builder.push(", ");
+    query_builder.push(key);
+    query_builder.push(" = ");
+    query_builder.push_bind(value);
+}
+
 async fn create_user(
     State(pool): State<PgPool>,
     Json(user): Json<CreateUserInput>,
@@ -152,6 +181,45 @@ async fn create_user(
     })?;
 
     Ok((StatusCode::CREATED, user_id.to_string()))
+}
+
+async fn update_user(
+    State(pool): State<PgPool>,
+    Json(user): Json<UpdateUserInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    if user.is_empty() {
+        return Err((
+            StatusCode::EXPECTATION_FAILED,
+            "No valid fields to update".to_string(),
+        ));
+    }
+
+    let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
+        sqlx::QueryBuilder::new("UPDATE Users SET updated_at = NOW()");
+
+    if let Some(name) = &user.name {
+        add_to_query(&mut query_builder, "name", name);
+    }
+
+    if let Some(email) = &user.email {
+        add_to_query(&mut query_builder, "email", email);
+    }
+
+    if let Some(password) = &user.password {
+        add_to_query(&mut query_builder, "password", password);
+    }
+
+    query_builder.push(" WHERE id = ");
+    query_builder.push_bind(user.id);
+    let query = query_builder.build();
+    query.execute(&pool).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::OK, "User updated successfully".to_string()))
 }
 
 async fn get_all_user(
