@@ -327,24 +327,21 @@ async fn update_deer(
     }
 
     let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
-        sqlx::QueryBuilder::new("UPDATE Cervidae SET ");
+        sqlx::QueryBuilder::new("UPDATE Cervidae SET updated_at = NOW()");
 
-    query_builder.push("updated_by = ").push_bind(deer.user_id);
-    query_builder.push(", updated_at = NOW()");
+    add_to_query(&mut query_builder, "updated_by", &deer.user_id);
 
     if let Some(name) = &deer.name {
-        query_builder.push(", name = ").push_bind(name);
+        add_to_query(&mut query_builder, "name", name);
     }
-    if let Some(description) = deer.description {
-        query_builder
-            .push(", description = ")
-            .push_bind(description);
+    if let Some(description) = &deer.description {
+        add_to_query(&mut query_builder, "description", description);
     }
-    if let Some(image_url) = deer.image_url {
-        query_builder.push(", image_url = ").push_bind(image_url);
+    if let Some(image_url) = &deer.image_url {
+        add_to_query(&mut query_builder, "image_url", image_url);
     }
-    if let Some(kill_count) = deer.kill_count {
-        query_builder.push(", kill_count = ").push_bind(kill_count);
+    if let Some(kill_count) = &deer.kill_count {
+        add_to_query(&mut query_builder, "kill_count", kill_count);
     }
 
     query_builder.push(" WHERE id = ").push_bind(deer.id);
