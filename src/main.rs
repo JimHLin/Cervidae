@@ -75,8 +75,8 @@ struct User {
     name: String,
     email: String,
     password: String,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -108,8 +108,8 @@ struct Deer {
     description: Option<String>,
     image_url: Option<String>,
     kill_count: Option<i32>,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
     created_by: Uuid,
     updated_by: Uuid,
 }
@@ -149,8 +149,8 @@ struct Review {
     danger_level: i32,
     title: String,
     body: String,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -183,8 +183,8 @@ struct Comment {
     user_id: Uuid,
     parent_id: Option<Uuid>,
     content: String,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -211,8 +211,8 @@ struct Crime {
     id: Uuid,
     name: String,
     description: String,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize, Serialize)]
