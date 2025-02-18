@@ -243,7 +243,7 @@ async fn get_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<User>), (StatusCode, String)> {
     let user = sqlx::query_as!(User, "SELECT * FROM Users WHERE id = $1", user_id)
-        .fetch_one(&pool)
+        .fetch_optional(&pool)
         .await
         .map_err(|e| {
             (
@@ -252,7 +252,11 @@ async fn get_user(
             )
         })?;
 
-    Ok((StatusCode::OK, Json(user)))
+    if let Some(user) = user {
+        Ok((StatusCode::OK, Json(user)))
+    } else {
+        Err((StatusCode::NOT_FOUND, "User not found".to_string()))
+    }
 }
 
 async fn create_deer(
@@ -304,7 +308,7 @@ async fn get_deer(
     Path(deer_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<Deer>), (StatusCode, String)> {
     let deer = sqlx::query_as!(Deer, "SELECT * FROM Cervidae WHERE id = $1", deer_id)
-        .fetch_one(&pool)
+        .fetch_optional(&pool)
         .await
         .map_err(|e| {
             (
@@ -312,7 +316,11 @@ async fn get_deer(
                 format!("Database error: {}", e),
             )
         })?;
-    Ok((StatusCode::OK, Json(deer)))
+    if let Some(deer) = deer {
+        Ok((StatusCode::OK, Json(deer)))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Deer not found".to_string()))
+    }
 }
 
 async fn update_deer(
