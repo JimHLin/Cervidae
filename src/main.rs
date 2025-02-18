@@ -97,8 +97,8 @@ struct User {
     name: String,
     email: String,
     password: String,
-    created_at: Option<NaiveDateTime>,
-    updated_at: Option<NaiveDateTime>,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -108,8 +108,8 @@ struct Deer {
     description: Option<String>,
     image_url: Option<String>,
     kill_count: Option<i32>,
-    created_at: Option<NaiveDateTime>,
-    updated_at: Option<NaiveDateTime>,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
     created_by: Uuid,
     updated_by: Uuid,
 }
