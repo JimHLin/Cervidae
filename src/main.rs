@@ -255,6 +255,43 @@ fn add_to_query<'b, 'a, T>(
     query_builder.push_bind(value);
 }
 
+async fn get_all_user(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
+    let users = sqlx::query_as!(User, "SELECT * FROM Users")
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, Json(users)))
+}
+
+async fn get_user(
+    State(pool): State<PgPool>,
+    Path(user_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<User>), (StatusCode, String)> {
+    let user = sqlx::query_as!(User, "SELECT * FROM Users WHERE id = $1", user_id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    if let Some(user) = user {
+        Ok((StatusCode::OK, Json(user)))
+    } else {
+        Err((StatusCode::NOT_FOUND, "User not found".to_string()))
+    }
+}
+
 async fn create_user(
     State(pool): State<PgPool>,
     Json(user): Json<CreateUserInput>,
@@ -318,43 +355,6 @@ async fn update_user(
     })?;
 
     Ok((StatusCode::OK, "User updated successfully".to_string()))
-}
-
-async fn get_all_user(
-    State(pool): State<PgPool>,
-) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
-    let users = sqlx::query_as!(User, "SELECT * FROM Users")
-        .fetch_all(&pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Database error: {}", e),
-            )
-        })?;
-
-    Ok((StatusCode::OK, Json(users)))
-}
-
-async fn get_user(
-    State(pool): State<PgPool>,
-    Path(user_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<User>), (StatusCode, String)> {
-    let user = sqlx::query_as!(User, "SELECT * FROM Users WHERE id = $1", user_id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Database error: {}", e),
-            )
-        })?;
-
-    if let Some(user) = user {
-        Ok((StatusCode::OK, Json(user)))
-    } else {
-        Err((StatusCode::NOT_FOUND, "User not found".to_string()))
-    }
 }
 
 async fn create_deer(
