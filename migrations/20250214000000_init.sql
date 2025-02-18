@@ -37,11 +37,13 @@ CREATE TABLE Review (
 CREATE TABLE Comment (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
+    cervidae_id UUID NOT NULL,
     parent_id UUID,
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(id),
+    FOREIGN KEY (cervidae_id) REFERENCES Cervidae(id),
     FOREIGN KEY (parent_id) REFERENCES Comment(id)
 );
 
