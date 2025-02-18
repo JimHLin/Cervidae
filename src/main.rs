@@ -142,6 +142,104 @@ impl UpdateDeerInput {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+struct Review {
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    danger_level: i32,
+    title: String,
+    body: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateReviewInput {
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    danger_level: i32,
+    title: String,
+    body: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UpdateReviewInput {
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    danger_level: Option<i32>,
+    title: Option<String>,
+    body: Option<String>,
+}
+
+impl UpdateReviewInput {
+    fn is_empty(&self) -> bool {
+        self.danger_level.is_none() && self.title.is_none() && self.body.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct Comment {
+    id: Uuid,
+    user_id: Uuid,
+    parent_id: Option<Uuid>,
+    content: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateCommentInput {
+    user_id: Uuid,
+    parent_id: Option<Uuid>,
+    content: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UpdateCommentInput {
+    id: Uuid,
+    content: Option<String>,
+}
+
+impl UpdateCommentInput {
+    fn is_empty(&self) -> bool {
+        self.content.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct Crime {
+    id: Uuid,
+    name: String,
+    description: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateCrimeInput {
+    name: String,
+    description: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UpdateCrimeInput {
+    id: Uuid,
+    name: Option<String>,
+    description: Option<String>,
+}
+
+impl UpdateCrimeInput {
+    fn is_empty(&self) -> bool {
+        self.name.is_none() && self.description.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct CrimeCervidae {
+    crime_id: Uuid,
+    cervidae_id: Uuid,
+}
+
 struct DeerError(StatusCode, String);
 
 fn add_to_query<'b, 'a, T>(
