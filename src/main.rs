@@ -70,6 +70,16 @@ async fn root(
 }
 
 #[derive(Deserialize, Serialize)]
+struct User {
+    id: Uuid,
+    name: String,
+    email: String,
+    password: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Serialize)]
 struct CreateUserInput {
     //id: Uuid,
     name: String,
@@ -92,16 +102,6 @@ impl UpdateUserInput {
 }
 
 #[derive(Deserialize, Serialize)]
-struct User {
-    id: Uuid,
-    name: String,
-    email: String,
-    password: String,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
-}
-
-#[derive(Deserialize, Serialize)]
 struct Deer {
     id: Uuid,
     name: String,
@@ -112,6 +112,15 @@ struct Deer {
     updated_at: NaiveDateTime,
     created_by: Uuid,
     updated_by: Uuid,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateDeerInput {
+    user_id: Uuid,
+    name: String,
+    description: String,
+    image_url: Option<String>,
+    kill_count: Option<i32>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -131,15 +140,6 @@ impl UpdateDeerInput {
             && self.image_url.is_none()
             && self.kill_count.is_none()
     }
-}
-
-#[derive(Deserialize, Serialize)]
-struct CreateDeerInput {
-    user_id: Uuid,
-    name: String,
-    description: String,
-    image_url: Option<String>,
-    kill_count: Option<i32>,
 }
 
 struct DeerError(StatusCode, String);
