@@ -1,3 +1,12 @@
+CREATE TABLE Users (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE Cervidae (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -8,16 +17,8 @@ CREATE TABLE Cervidae (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by UUID NOT NULL,
     updated_by UUID NOT NULL,
-    FOREIGN KEY (created_by) REFERENCES User(id),
-    FOREIGN KEY (updated_by) REFERENCES User(id)
-);
-
-CREATE TABLE User (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES Users(id),
+    FOREIGN KEY (updated_by) REFERENCES Users(id)
 );
 
 CREATE TABLE Review (
@@ -28,7 +29,7 @@ CREATE TABLE Review (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, cervidae_id),
-    FOREIGN KEY (user_id) REFERENCES User(id),
+    FOREIGN KEY (user_id) REFERENCES Users(id),
     FOREIGN KEY (cervidae_id) REFERENCES Cervidae(id)
 );
 
@@ -39,7 +40,7 @@ CREATE TABLE Comment (
     parent_id UUID,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES User(id),
+    FOREIGN KEY (user_id) REFERENCES Users(id),
     FOREIGN KEY (parent_id) REFERENCES Comment(id)
 );
 
@@ -48,7 +49,7 @@ CREATE TABLE Crime (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE Crime_Cervidae (

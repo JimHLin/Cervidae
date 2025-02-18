@@ -3,6 +3,9 @@ REPO := "https://github.com" / "JimHLin" / PROJECT
 ROOT_DIR := justfile_directory()
 OUTPUT_DIR := ROOT_DIR / "target"
 
+set dotenv-load
+
+
 migrate:
     cargo run --bin migrate
 
@@ -18,5 +21,6 @@ local-down:
     docker compose down -v
 
 local-dev:
-    local-min
-    migrate
+    just local-min
+    just migrate
+    cargo run --bin Cervidae
