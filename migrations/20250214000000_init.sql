@@ -126,12 +126,12 @@ INSERT INTO Comment VALUES('3881b856-7d08-4a56-a665-352008525732', 'fabfe0da-9a9
 INSERT INTO Comment VALUES('3881b856-7d08-4a56-a665-352008525733', 'fabfe0da-9a94-46d3-b380-73cf71246c0d', '99ad6de2-af4c-4104-86dd-cfb211d249c9',
     null, 'I''m pretty certain the description is incorrect. The title "shogun" originates from native tribes in Southern Mexico, not Wales.', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
 
-  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3d', 'Murder', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
-  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3e', 'Assault', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
-  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3f', 'Theft', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
-  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb40', 'Arson', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
-  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb41', 'Terrorism', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
-  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb42', 'Treason', '2025-02-17 06:04:53', '2025-02-17 06:04:53');
+  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3d', 'Murder', 'Murder is the unlawful killing of another human without justification or valid excuse committed with the necessary intention as defined by the law in a specific jurisdiction.');
+  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3e', 'Assault', 'Assault is the act of causing physical harm or unwanted physical contact to another person, or, in some legal definitions, the threat or attempt to do so.');
+  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3f', 'Theft', 'Theft is the act of taking another person''s property or services without that person''s permission or consent with the intent to deprive the rightful owner of it.');
+  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb40', 'Arson', 'Arson is the act of willfully and deliberately setting fire to or charring property.');
+  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb41', 'Terrorism', 'Terrorism, in its broadest sense, is the use of violence against non-combatants to achieve political or ideological aims.');
+  INSERT INTO Crime VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb42', 'Treason', 'Treason is the crime of attacking a state authority to which one owes allegiance.');
   
   INSERT INTO Crime_Cervidae VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3d', '99ad6de2-af4c-4104-86dd-cfb211d249c7');
   INSERT INTO Crime_Cervidae VALUES('8c8d502b-f7e1-4ad1-a741-b9dc5bdbdb3d', '99ad6de2-af4c-4104-86dd-cfb211d249c8');
