@@ -45,12 +45,12 @@ async fn main() {
         .route("/comment/user/{:user_id}", get(get_comment_by_user_id))
         .route("/comment/deer/{:deer_id}", get(get_comment_by_deer_id))
         .route("/comment/update", patch(update_comment))
-        .route("/comment/delete", delete(delete_comment))
+        .route("/comment/delete/{:comment_id}", delete(delete_comment))
         .route("/crime/create", post(create_crime))
-        .route("/crime/all", get(get_all_crimes))
+        .route("/crime", get(get_all_crimes))
         .route("/crime/update", patch(update_crime))
         .route("/crime/delete/{:crime_id}", delete(delete_crime))
-        .route("/background/asign", post(add_crime_to_deer))
+        .route("/background/assign", post(add_crime_to_deer))
         .route("/background/{:deer_id}", get(get_crime_by_deer_id))
         .route("/background/delete", delete(delete_crime_from_deer))
         .with_state(pool);
@@ -882,7 +882,7 @@ async fn add_crime_to_deer(
         )
     })?;
 
-    Ok((StatusCode::CREATED, crime_cervidae.crime_id.to_string()))
+    Ok((StatusCode::CREATED, "Deer charged with crime".to_string()))
 }
 
 async fn get_crime_by_deer_id(
