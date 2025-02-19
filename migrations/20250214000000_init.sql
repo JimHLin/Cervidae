@@ -12,11 +12,11 @@ CREATE TABLE Cervidae (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     image_url VARCHAR(255),
-    kill_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    kill_count BIGINT DEFAULT 0,
     created_by UUID NOT NULL,
     updated_by UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (created_by) REFERENCES Users(id),
     FOREIGN KEY (updated_by) REFERENCES Users(id)
 );
@@ -62,3 +62,5 @@ CREATE TABLE Crime_Cervidae (
     FOREIGN KEY (crime_id) REFERENCES Crime(id),
     FOREIGN KEY (cervidae_id) REFERENCES Cervidae(id)
 );
+
+ 

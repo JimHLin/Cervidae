@@ -124,7 +124,7 @@ struct Deer {
     name: String,
     description: Option<String>,
     image_url: Option<String>,
-    kill_count: Option<i32>,
+    kill_count: Option<i64>,
     created_at: Option<NaiveDateTime>,
     updated_at: Option<NaiveDateTime>,
     created_by: Uuid,
@@ -137,7 +137,7 @@ struct CreateDeerInput {
     name: String,
     description: String,
     image_url: Option<String>,
-    kill_count: Option<i32>,
+    kill_count: Option<i64>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -147,7 +147,7 @@ struct UpdateDeerInput {
     name: Option<String>,
     description: Option<String>,
     image_url: Option<String>,
-    kill_count: Option<i32>,
+    kill_count: Option<i64>,
 }
 
 impl UpdateDeerInput {
