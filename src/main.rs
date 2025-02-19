@@ -2,7 +2,7 @@ use axum::{
     extract::Path,
     extract::State,
     http::StatusCode,
-    routing::{get, patch, post},
+    routing::{delete, get, patch, post},
     Json, Router,
 };
 use chrono::NaiveDateTime;
@@ -25,17 +25,34 @@ async fn main() {
 
     // build our application with a route
     let app = Router::new()
-        // `GET /` goes to `root`
         .route("/", get(root))
-        // `POST /users` goes to `create_user`
         .route("/user/create", post(create_user))
         .route("/user", get(get_all_user))
         .route("/user/{:user_id}", get(get_user))
         .route("/user/update", patch(update_user))
+        .route("/user/delete/{:user_id}", delete(delete_user))
         .route("/deer/create", post(create_deer))
         .route("/deer", get(get_all_deer))
         .route("/deer/{:deer_id}", get(get_deer))
         .route("/deer/update", patch(update_deer))
+        .route("/deer/delete/{:deer_id}", delete(delete_deer))
+        .route("/review/create", post(create_review))
+        .route("/review/user/{:user_id}", get(get_review_by_user_id))
+        .route("/review/deer/{:deer_id}", get(get_review_by_deer_id))
+        .route("/review/update", patch(update_review))
+        .route("/review/delete", delete(delete_review))
+        .route("/comment/create", post(create_comment))
+        .route("/comment/user/{:user_id}", get(get_comment_by_user_id))
+        .route("/comment/deer/{:deer_id}", get(get_comment_by_deer_id))
+        .route("/comment/update", patch(update_comment))
+        .route("/comment/delete/{:comment_id}", delete(delete_comment))
+        .route("/crime/create", post(create_crime))
+        .route("/crime", get(get_all_crimes))
+        .route("/crime/update", patch(update_crime))
+        .route("/crime/delete/{:crime_id}", delete(delete_crime))
+        .route("/background/assign", post(add_crime_to_deer))
+        .route("/background/{:deer_id}", get(get_crime_by_deer_id))
+        .route("/background/delete", delete(delete_crime_from_deer))
         .with_state(pool);
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -70,6 +87,16 @@ async fn root(
 }
 
 #[derive(Deserialize, Serialize)]
+struct User {
+    id: Uuid,
+    name: String,
+    email: String,
+    password: String,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Deserialize, Serialize)]
 struct CreateUserInput {
     //id: Uuid,
     name: String,
@@ -92,26 +119,25 @@ impl UpdateUserInput {
 }
 
 #[derive(Deserialize, Serialize)]
-struct User {
-    id: Uuid,
-    name: String,
-    email: String,
-    password: String,
-    created_at: Option<NaiveDateTime>,
-    updated_at: Option<NaiveDateTime>,
-}
-
-#[derive(Deserialize, Serialize)]
 struct Deer {
     id: Uuid,
     name: String,
     description: Option<String>,
     image_url: Option<String>,
-    kill_count: Option<i32>,
+    kill_count: Option<i64>,
     created_at: Option<NaiveDateTime>,
     updated_at: Option<NaiveDateTime>,
     created_by: Uuid,
     updated_by: Uuid,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateDeerInput {
+    user_id: Uuid,
+    name: String,
+    description: String,
+    image_url: Option<String>,
+    kill_count: Option<i64>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -121,7 +147,7 @@ struct UpdateDeerInput {
     name: Option<String>,
     description: Option<String>,
     image_url: Option<String>,
-    kill_count: Option<i32>,
+    kill_count: Option<i64>,
 }
 
 impl UpdateDeerInput {
@@ -134,12 +160,103 @@ impl UpdateDeerInput {
 }
 
 #[derive(Deserialize, Serialize)]
-struct CreateDeerInput {
+struct Review {
     user_id: Uuid,
+    cervidae_id: Uuid,
+    danger_level: i32,
+    title: String,
+    body: String,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateReviewInput {
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    danger_level: i32,
+    title: String,
+    body: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UpdateReviewInput {
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    danger_level: Option<i32>,
+    title: Option<String>,
+    body: Option<String>,
+}
+
+impl UpdateReviewInput {
+    fn is_empty(&self) -> bool {
+        self.danger_level.is_none() && self.title.is_none() && self.body.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct Comment {
+    id: Uuid,
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    parent_id: Option<Uuid>,
+    content: String,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateCommentInput {
+    user_id: Uuid,
+    cervidae_id: Uuid,
+    parent_id: Option<Uuid>,
+    content: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UpdateCommentInput {
+    id: Uuid,
+    content: Option<String>,
+}
+
+impl UpdateCommentInput {
+    fn is_empty(&self) -> bool {
+        self.content.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct Crime {
+    id: Uuid,
+    name: String,
+    description: Option<String>,
+    created_at: Option<NaiveDateTime>,
+    updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateCrimeInput {
     name: String,
     description: String,
-    image_url: Option<String>,
-    kill_count: Option<i32>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UpdateCrimeInput {
+    id: Uuid,
+    name: Option<String>,
+    description: Option<String>,
+}
+
+impl UpdateCrimeInput {
+    fn is_empty(&self) -> bool {
+        self.name.is_none() && self.description.is_none()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct CrimeCervidae {
+    crime_id: Uuid,
+    cervidae_id: Uuid,
 }
 
 struct DeerError(StatusCode, String);
@@ -155,6 +272,43 @@ fn add_to_query<'b, 'a, T>(
     query_builder.push(key);
     query_builder.push(" = ");
     query_builder.push_bind(value);
+}
+
+async fn get_all_user(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
+    let users = sqlx::query_as!(User, "SELECT * FROM Users")
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, Json(users)))
+}
+
+async fn get_user(
+    State(pool): State<PgPool>,
+    Path(user_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<User>), (StatusCode, String)> {
+    let user = sqlx::query_as!(User, "SELECT * FROM Users WHERE id = $1", user_id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    if let Some(user) = user {
+        Ok((StatusCode::OK, Json(user)))
+    } else {
+        Err((StatusCode::NOT_FOUND, "User not found".to_string()))
+    }
 }
 
 async fn create_user(
@@ -222,28 +376,13 @@ async fn update_user(
     Ok((StatusCode::OK, "User updated successfully".to_string()))
 }
 
-async fn get_all_user(
-    State(pool): State<PgPool>,
-) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
-    let users = sqlx::query_as!(User, "SELECT * FROM Users")
-        .fetch_all(&pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Database error: {}", e),
-            )
-        })?;
-
-    Ok((StatusCode::OK, Json(users)))
-}
-
-async fn get_user(
+async fn delete_user(
     State(pool): State<PgPool>,
     Path(user_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<User>), (StatusCode, String)> {
-    let user = sqlx::query_as!(User, "SELECT * FROM Users WHERE id = $1", user_id)
-        .fetch_optional(&pool)
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query("DELETE FROM Users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
         .await
         .map_err(|e| {
             (
@@ -252,11 +391,7 @@ async fn get_user(
             )
         })?;
 
-    if let Some(user) = user {
-        Ok((StatusCode::OK, Json(user)))
-    } else {
-        Err((StatusCode::NOT_FOUND, "User not found".to_string()))
-    }
+    Ok((StatusCode::OK, "User deleted successfully".to_string()))
 }
 
 async fn create_deer(
@@ -286,6 +421,24 @@ async fn create_deer(
     })?;
 
     Ok((StatusCode::CREATED, deer_id.to_string()))
+}
+
+async fn delete_deer(
+    State(pool): State<PgPool>,
+    Path(deer_id): Path<Uuid>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query("DELETE FROM Cervidae WHERE id = $1")
+        .bind(deer_id)
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, "Deer deleted successfully".to_string()))
 }
 
 async fn get_all_deer(
@@ -362,4 +515,410 @@ async fn update_deer(
     })?;
 
     Ok((StatusCode::OK, "Deer updated successfully".to_string()))
+}
+
+async fn get_review_by_deer_id(
+    State(pool): State<PgPool>,
+    Path(deer_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Vec<Review>>), (StatusCode, String)> {
+    let reviews = sqlx::query_as!(
+        Review,
+        "SELECT * FROM Review WHERE cervidae_id = $1",
+        deer_id
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+    Ok((StatusCode::OK, Json(reviews)))
+}
+
+async fn get_review_by_user_id(
+    State(pool): State<PgPool>,
+    Path(user_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Vec<Review>>), (StatusCode, String)> {
+    let reviews = sqlx::query_as!(Review, "SELECT * FROM Review WHERE user_id = $1", user_id)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+    Ok((StatusCode::OK, Json(reviews)))
+}
+
+async fn create_review(
+    State(pool): State<PgPool>,
+    Json(review): Json<CreateReviewInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    let review_id = uuid::Uuid::new_v4();
+    sqlx::query(
+        r#"
+        INSERT INTO Review (user_id, cervidae_id, danger_level, title, body)
+         VALUES ($1, $2, $3, $4, $5)"#,
+    )
+    .bind(&review.user_id)
+    .bind(&review.cervidae_id)
+    .bind(&review.danger_level)
+    .bind(&review.title)
+    .bind(&review.body)
+    .execute(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::CREATED, review_id.to_string()))
+}
+
+async fn update_review(
+    State(pool): State<PgPool>,
+    Json(review): Json<UpdateReviewInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    if review.is_empty() {
+        return Ok((
+            StatusCode::EXPECTATION_FAILED,
+            "No valid fields to update".to_string(),
+        ));
+    }
+
+    let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
+        sqlx::QueryBuilder::new("UPDATE Review SET updated_at = NOW()");
+
+    if let Some(danger_level) = &review.danger_level {
+        add_to_query(&mut query_builder, "danger_level", danger_level);
+    }
+    if let Some(title) = &review.title {
+        add_to_query(&mut query_builder, "title", title);
+    }
+    if let Some(body) = &review.body {
+        add_to_query(&mut query_builder, "body", body);
+    }
+
+    query_builder
+        .push(" WHERE user_id = ")
+        .push_bind(&review.user_id);
+    query_builder
+        .push(" AND cervidae_id = ")
+        .push_bind(&review.cervidae_id);
+    let query = query_builder.build();
+    query.execute(&pool).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::OK, "Review updated successfully".to_string()))
+}
+
+async fn delete_review(
+    State(pool): State<PgPool>,
+    Json(review): Json<UpdateReviewInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query("DELETE FROM Review WHERE user_id = $1 AND cervidae_id = $2")
+        .bind(&review.user_id)
+        .bind(&review.cervidae_id)
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, "Review deleted successfully".to_string()))
+}
+
+async fn get_comment_by_deer_id(
+    State(pool): State<PgPool>,
+    Path(deer_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Vec<Comment>>), (StatusCode, String)> {
+    let comments = sqlx::query_as!(
+        Comment,
+        "SELECT * FROM Comment WHERE cervidae_id = $1",
+        deer_id
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+    Ok((StatusCode::OK, Json(comments)))
+}
+
+async fn get_comment_by_user_id(
+    State(pool): State<PgPool>,
+    Path(user_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Vec<Comment>>), (StatusCode, String)> {
+    let comments = sqlx::query_as!(Comment, "SELECT * FROM Comment WHERE user_id = $1", user_id)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+    Ok((StatusCode::OK, Json(comments)))
+}
+
+async fn get_comment(
+    State(pool): State<PgPool>,
+    Path(comment_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Comment>), (StatusCode, String)> {
+    let comment = sqlx::query_as!(Comment, "SELECT * FROM Comment WHERE id = $1", comment_id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+    if let Some(comment) = comment {
+        Ok((StatusCode::OK, Json(comment)))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Comment not found".to_string()))
+    }
+}
+
+async fn create_comment(
+    State(pool): State<PgPool>,
+    Json(comment): Json<CreateCommentInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    let comment_id = uuid::Uuid::new_v4();
+    sqlx::query(
+        r#"
+        INSERT INTO Comment (id, user_id, cervidae_id, parent_id, content)
+         VALUES ($1, $2, $3, $4, $5)"#,
+    )
+    .bind(comment_id)
+    .bind(&comment.user_id)
+    .bind(&comment.cervidae_id)
+    .bind(&comment.parent_id)
+    .bind(&comment.content)
+    .execute(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::CREATED, comment_id.to_string()))
+}
+
+async fn update_comment(
+    State(pool): State<PgPool>,
+    Json(comment): Json<UpdateCommentInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    if comment.is_empty() {
+        return Ok((
+            StatusCode::EXPECTATION_FAILED,
+            "No valid fields to update".to_string(),
+        ));
+    }
+
+    let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
+        sqlx::QueryBuilder::new("UPDATE Comment SET updated_at = NOW()");
+
+    if let Some(content) = &comment.content {
+        add_to_query(&mut query_builder, "content", content);
+    }
+
+    query_builder.push(" WHERE id = ").push_bind(comment.id);
+    let query = query_builder.build();
+    query.execute(&pool).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::OK, "Comment updated successfully".to_string()))
+}
+
+async fn delete_comment(
+    State(pool): State<PgPool>,
+    Path(comment_id): Path<Uuid>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query("DELETE FROM Comment WHERE id = $1")
+        .bind(comment_id)
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, "Comment deleted successfully".to_string()))
+}
+
+async fn create_crime(
+    State(pool): State<PgPool>,
+    Json(crime): Json<CreateCrimeInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    let crime_id = uuid::Uuid::new_v4();
+    sqlx::query(
+        r#"
+        INSERT INTO Crime (id, name, description)
+         VALUES ($1, $2, $3)"#,
+    )
+    .bind(crime_id)
+    .bind(&crime.name)
+    .bind(&crime.description)
+    .execute(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::CREATED, crime_id.to_string()))
+}
+
+async fn get_all_crimes(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Vec<Crime>>), (StatusCode, String)> {
+    let crimes = sqlx::query_as!(Crime, "SELECT * FROM Crime")
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+    Ok((StatusCode::OK, Json(crimes)))
+}
+
+async fn update_crime(
+    State(pool): State<PgPool>,
+    Json(crime): Json<UpdateCrimeInput>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    if crime.is_empty() {
+        return Ok((
+            StatusCode::EXPECTATION_FAILED,
+            "No valid fields to update".to_string(),
+        ));
+    }
+
+    let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
+        sqlx::QueryBuilder::new("UPDATE Crime SET updated_at = NOW()");
+
+    if let Some(name) = &crime.name {
+        add_to_query(&mut query_builder, "name", name);
+    }
+    if let Some(description) = &crime.description {
+        add_to_query(&mut query_builder, "description", description);
+    }
+
+    query_builder.push(" WHERE id = ").push_bind(crime.id);
+    let query = query_builder.build();
+    query.execute(&pool).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::OK, "Crime updated successfully".to_string()))
+}
+
+async fn delete_crime(
+    State(pool): State<PgPool>,
+    Path(crime_id): Path<Uuid>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query("DELETE FROM Crime WHERE id = $1")
+        .bind(crime_id)
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((StatusCode::OK, "Crime deleted successfully".to_string()))
+}
+
+async fn add_crime_to_deer(
+    State(pool): State<PgPool>,
+    Json(crime_cervidae): Json<CrimeCervidae>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query(
+        r#"
+        INSERT INTO Crime_Cervidae (crime_id, cervidae_id)
+         VALUES ($1, $2)"#,
+    )
+    .bind(crime_cervidae.crime_id)
+    .bind(crime_cervidae.cervidae_id)
+    .execute(&pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?;
+
+    Ok((StatusCode::CREATED, "Deer charged with crime".to_string()))
+}
+
+async fn get_crime_by_deer_id(
+    State(pool): State<PgPool>,
+    Path(deer_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Vec<Crime>>), (StatusCode, String)> {
+    let crimes = sqlx::query_as!(Crime, "SELECT * FROM Crime WHERE id IN (SELECT crime_id FROM Crime_Cervidae WHERE cervidae_id = $1)", deer_id)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+    Ok((StatusCode::OK, Json(crimes)))
+}
+
+async fn delete_crime_from_deer(
+    State(pool): State<PgPool>,
+    Json(crime_cervidae): Json<CrimeCervidae>,
+) -> Result<(StatusCode, String), (StatusCode, String)> {
+    sqlx::query("DELETE FROM Crime_Cervidae WHERE crime_id = $1 AND cervidae_id = $2")
+        .bind(crime_cervidae.crime_id)
+        .bind(crime_cervidae.cervidae_id)
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
+
+    Ok((
+        StatusCode::OK,
+        "Crime deleted from deer successfully".to_string(),
+    ))
 }
