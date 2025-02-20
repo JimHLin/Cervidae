@@ -62,8 +62,18 @@ impl ScalarType for NaiveDateTimeScalar {
     }
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct User {
+    pub id: Uuid,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+pub struct UserOutput {
     pub id: UuidScalar,
     pub name: String,
     pub email: String,
@@ -71,6 +81,19 @@ pub struct User {
     pub password: String,
     pub created_at: Option<NaiveDateTimeScalar>,
     pub updated_at: Option<NaiveDateTimeScalar>,
+}
+
+impl From<User> for UserOutput {
+    fn from(user: User) -> Self {
+        UserOutput {
+            id: user.id.into(),
+            name: user.name,
+            email: user.email,
+            password: user.password,
+            created_at: user.created_at.map(NaiveDateTimeScalar::from),
+            updated_at: user.updated_at.map(NaiveDateTimeScalar::from),
+        }
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -94,8 +117,21 @@ impl UpdateUserInput {
     }
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Deer {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub image_url: Option<String>,
+    pub kill_count: Option<i64>,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+    pub created_by: Uuid,
+    pub updated_by: Uuid,
+}
+
+#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+pub struct DeerOutput {
     pub id: UuidScalar,
     pub name: String,
     pub description: Option<String>,
@@ -105,6 +141,22 @@ pub struct Deer {
     pub updated_at: Option<NaiveDateTimeScalar>,
     pub created_by: UuidScalar,
     pub updated_by: UuidScalar,
+}
+
+impl From<Deer> for DeerOutput {
+    fn from(deer: Deer) -> Self {
+        DeerOutput {
+            id: deer.id.into(),
+            name: deer.name,
+            description: deer.description,
+            image_url: deer.image_url,
+            kill_count: deer.kill_count,
+            created_at: deer.created_at.map(NaiveDateTimeScalar::from),
+            updated_at: deer.updated_at.map(NaiveDateTimeScalar::from),
+            created_by: deer.created_by.into(),
+            updated_by: deer.updated_by.into(),
+        }
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
