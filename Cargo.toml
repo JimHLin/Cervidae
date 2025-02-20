@@ -25,3 +25,5 @@ uuid = { version = "1.11.0", features = [
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
     "serde"
 ] }
+async-graphql = "7.0.15"
+async-graphql-axum = "7.0.15"
