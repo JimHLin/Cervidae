@@ -187,8 +187,19 @@ impl UpdateDeerInput {
     }
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Review {
+    pub user_id: Uuid,
+    pub cervidae_id: Uuid,
+    pub danger_level: i32,
+    pub title: String,
+    pub body: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+pub struct ReviewOutput {
     pub user_id: UuidScalar,
     pub cervidae_id: UuidScalar,
     pub danger_level: i32,
@@ -196,6 +207,20 @@ pub struct Review {
     pub body: String,
     pub created_at: Option<NaiveDateTimeScalar>,
     pub updated_at: Option<NaiveDateTimeScalar>,
+}
+
+impl From<Review> for ReviewOutput {
+    fn from(review: Review) -> Self {
+        ReviewOutput {
+            user_id: review.user_id.into(),
+            cervidae_id: review.cervidae_id.into(),
+            danger_level: review.danger_level,
+            title: review.title,
+            body: review.body,
+            created_at: review.created_at.map(NaiveDateTimeScalar::from),
+            updated_at: review.updated_at.map(NaiveDateTimeScalar::from),
+        }
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -222,8 +247,19 @@ impl UpdateReviewInput {
     }
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Comment {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub cervidae_id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub content: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+pub struct CommentOutput {
     pub id: UuidScalar,
     pub user_id: UuidScalar,
     pub cervidae_id: UuidScalar,
@@ -241,6 +277,20 @@ pub struct CreateCommentInput {
     pub content: String,
 }
 
+impl From<Comment> for CommentOutput {
+    fn from(comment: Comment) -> Self {
+        CommentOutput {
+            id: comment.id.into(),
+            user_id: comment.user_id.into(),
+            cervidae_id: comment.cervidae_id.into(),
+            parent_id: comment.parent_id.map(UuidScalar::from),
+            content: comment.content,
+            created_at: comment.created_at.map(NaiveDateTimeScalar::from),
+            updated_at: comment.updated_at.map(NaiveDateTimeScalar::from),
+        }
+    }
+}
+
 #[derive(InputObject, Debug, Serialize, Deserialize)]
 pub struct UpdateCommentInput {
     pub id: UuidScalar,
@@ -253,13 +303,34 @@ impl UpdateCommentInput {
     }
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Crime {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+pub struct CrimeOutput {
     pub id: UuidScalar,
     pub name: String,
     pub description: Option<String>,
     pub created_at: Option<NaiveDateTimeScalar>,
     pub updated_at: Option<NaiveDateTimeScalar>,
+}
+
+impl From<Crime> for CrimeOutput {
+    fn from(crime: Crime) -> Self {
+        CrimeOutput {
+            id: crime.id.into(),
+            name: crime.name,
+            description: crime.description,
+            created_at: crime.created_at.map(NaiveDateTimeScalar::from),
+            updated_at: crime.updated_at.map(NaiveDateTimeScalar::from),
+        }
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -281,8 +352,23 @@ impl UpdateCrimeInput {
     }
 }
 
-#[derive(InputObject, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CrimeCervidae {
+    pub crime_id: Uuid,
+    pub cervidae_id: Uuid,
+}
+
+#[derive(SimpleObject, Debug, Serialize, Deserialize)]
+pub struct CrimeCervidaeOutput {
     pub crime_id: UuidScalar,
     pub cervidae_id: UuidScalar,
+}
+
+impl From<CrimeCervidae> for CrimeCervidaeOutput {
+    fn from(crime_cervidae: CrimeCervidae) -> Self {
+        CrimeCervidaeOutput {
+            crime_id: crime_cervidae.crime_id.into(),
+            cervidae_id: crime_cervidae.cervidae_id.into(),
+        }
+    }
 }
