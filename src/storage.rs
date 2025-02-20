@@ -43,6 +43,69 @@ impl QueryRoot {
 
         Ok(deer.into_iter().map(DeerOutput::from).collect())
     }
+
+    async fn deer_reviews(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+    ) -> Result<Vec<ReviewOutput>> {
+        let id: Uuid = id.into();
+        let reviews = sqlx::query_as!(Review, "SELECT * FROM review WHERE cervidae_id = $1", id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(reviews.into_iter().map(ReviewOutput::from).collect())
+    }
+
+    async fn user_reviews(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+    ) -> Result<Vec<ReviewOutput>> {
+        let id: Uuid = id.into();
+        let reviews = sqlx::query_as!(Review, "SELECT * FROM review WHERE user_id = $1", id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(reviews.into_iter().map(ReviewOutput::from).collect())
+    }
+
+    async fn deer_comments(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+    ) -> Result<Vec<CommentOutput>> {
+        let id: Uuid = id.into();
+        let comments = sqlx::query_as!(Comment, "SELECT * FROM comment WHERE cervidae_id = $1", id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(comments.into_iter().map(CommentOutput::from).collect())
+    }
+
+    async fn user_comments(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+    ) -> Result<Vec<CommentOutput>> {
+        let id: Uuid = id.into();
+        let comments = sqlx::query_as!(Comment, "SELECT * FROM comment WHERE user_id = $1", id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(comments.into_iter().map(CommentOutput::from).collect())
+    }
+
+    async fn crimes(&self, context: &Context<'_>) -> Result<Vec<CrimeOutput>> {
+        let crimes = sqlx::query_as!(Crime, "SELECT * FROM crime")
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(crimes.into_iter().map(CrimeOutput::from).collect())
+    }
+
+    async fn deer_crimes(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<CrimeOutput>> {
+        let id: Uuid = id.into();
+        let crimes = sqlx::query_as!(Crime, "SELECT * FROM Crime WHERE id IN (SELECT crime_id FROM Crime_Cervidae WHERE cervidae_id = $1)", id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(crimes.into_iter().map(CrimeOutput::from).collect())
+    }
 }
 
 pub struct MutationRoot;
