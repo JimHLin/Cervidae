@@ -8,7 +8,7 @@ use axum::{
 use chrono::NaiveDateTime;
 use dotenvy;
 use serde::{Deserialize, Serialize};
-use sqlx::{query, PgPool};
+use sqlx::PgPool;
 use std::env;
 use uuid::Uuid;
 
@@ -258,8 +258,6 @@ struct CrimeCervidae {
     crime_id: Uuid,
     cervidae_id: Uuid,
 }
-
-struct DeerError(StatusCode, String);
 
 fn add_to_query<'b, 'a, T>(
     query_builder: &'b mut sqlx::QueryBuilder<'a, sqlx::Postgres>,
@@ -675,7 +673,7 @@ async fn get_comment_by_user_id(
         })?;
     Ok((StatusCode::OK, Json(comments)))
 }
-
+/*/
 async fn get_comment(
     State(pool): State<PgPool>,
     Path(comment_id): Path<Uuid>,
@@ -695,6 +693,7 @@ async fn get_comment(
         Err((StatusCode::NOT_FOUND, "Comment not found".to_string()))
     }
 }
+    */
 
 async fn create_comment(
     State(pool): State<PgPool>,
