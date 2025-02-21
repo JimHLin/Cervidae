@@ -1,6 +1,7 @@
 use async_graphql::*;
-use chrono::{Local, NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 //Scalar type for foreign types from external libraries
@@ -62,7 +63,7 @@ impl ScalarType for NaiveDateTimeScalar {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, FromRow)]
 pub struct User {
     pub id: Uuid,
     pub name: String,
@@ -117,7 +118,7 @@ impl UpdateUserInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Deer {
     pub id: Uuid,
     pub name: String,
@@ -187,7 +188,7 @@ impl UpdateDeerInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Review {
     pub user_id: Uuid,
     pub cervidae_id: Uuid,
@@ -247,7 +248,7 @@ impl UpdateReviewInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Comment {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -303,7 +304,7 @@ impl UpdateCommentInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Crime {
     pub id: Uuid,
     pub name: String,
@@ -352,21 +353,21 @@ impl UpdateCrimeInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct CrimeCervidae {
     pub crime_id: Uuid,
     pub cervidae_id: Uuid,
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
-pub struct CrimeCervidaeOutput {
+#[derive(InputObject, Debug, Serialize, Deserialize)]
+pub struct CrimeCervidaeInput {
     pub crime_id: UuidScalar,
     pub cervidae_id: UuidScalar,
 }
 
-impl From<CrimeCervidae> for CrimeCervidaeOutput {
-    fn from(crime_cervidae: CrimeCervidae) -> Self {
-        CrimeCervidaeOutput {
+impl From<CrimeCervidaeInput> for CrimeCervidae {
+    fn from(crime_cervidae: CrimeCervidaeInput) -> Self {
+        CrimeCervidae {
             crime_id: crime_cervidae.crime_id.into(),
             cervidae_id: crime_cervidae.cervidae_id.into(),
         }
