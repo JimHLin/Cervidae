@@ -5,10 +5,12 @@ use axum::{
     routing::get,
 };
 use dotenvy;
+use http::header::HeaderValue;
 use sqlx::PgPool;
 use std::env;
 use storage::{MutationRoot, QueryRoot};
 use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer};
 
 pub mod models;
 mod storage;
@@ -22,7 +24,11 @@ async fn main() {
     dotenvy::dotenv().ok();
     // initialize tracing
     tracing_subscriber::fmt::init();
-
+    // configure cors for testing, remove in production
+    let cors = CorsLayer::new()
+        .allow_origin("http://localhost:3001".parse::<HeaderValue>().unwrap()) // Allow requests from this origin
+        .allow_methods(Any) // Allow any HTTP method
+        .allow_headers(Any);
     // setup database connection
     let pool = PgPool::connect(&env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
@@ -32,7 +38,9 @@ async fn main() {
         .data(pool)
         .finish();
 
-    let app = axum::Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
+    let app = axum::Router::new()
+        .route("/", get(graphiql).post_service(GraphQL::new(schema)))
+        .layer(cors);
 
     println!("GraphiQL IDE: http://localhost:1234");
 
