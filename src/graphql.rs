@@ -42,27 +42,20 @@ impl QueryRoot {
         Ok(user.map(UserOutput::from))
     }
 
-    async fn deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<DeerOutput>> {
+    async fn deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<Deer>> {
         let id: Uuid = id.into();
         let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id = $1", id)
             .fetch_optional(context.data_unchecked::<PgPool>())
             .await?;
 
-        Ok(deer.map(DeerOutput::from))
+        Ok(deer)
     }
 
-    async fn deer_all(&self, context: &Context<'_>) -> Result<Vec<DeerOutput>> {
+    async fn deer_all(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
         let deer = query_as!(Deer, "SELECT * FROM Cervidae")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
 
-        Ok(deer.into_iter().map(DeerOutput::from).collect())
-    }
-
-    async fn test_deer(&self, context: &Context<'_>) -> Result<Vec<TestDeer>> {
-        let deer = query_as!(TestDeer, "SELECT * FROM Cervidae")
-            .fetch_all(context.data_unchecked::<PgPool>())
-            .await?;
         Ok(deer)
     }
 
@@ -199,11 +192,7 @@ impl MutationRoot {
         }
     }
 
-    async fn create_deer(
-        &self,
-        context: &Context<'_>,
-        input: CreateDeerInput,
-    ) -> Result<DeerOutput> {
+    async fn create_deer(&self, context: &Context<'_>, input: CreateDeerInput) -> Result<Deer> {
         let deer_id = uuid::Uuid::new_v4();
         let user_id: Uuid = input.user_id.into();
         let deer = query_as!(
@@ -224,18 +213,16 @@ impl MutationRoot {
         Ok(deer.into())
     }
 
-    async fn update_deer(
-        &self,
-        context: &Context<'_>,
-        input: UpdateDeerInput,
-    ) -> Result<DeerOutput> {
+    async fn update_deer(&self, context: &Context<'_>, input: UpdateDeerInput) -> Result<Deer> {
         if input.is_empty() {
             return Err(async_graphql::Error::new_with_source(
                 "No update fields provided",
             ));
         }
         let deer_id = Uuid::from(input.id);
-        let mut query = QueryBuilder::new("UPDATE Cervidae SET updated_at = NOW()");
+        let user_id: Uuid = input.user_id.into();
+        let mut query = QueryBuilder::new("UPDATE Cervidae SET updated_at = NOW(), updated_by = ");
+        query.push_bind(user_id);
         if let Some(name) = &input.name {
             add_to_query(&mut query, "name", name);
         }
