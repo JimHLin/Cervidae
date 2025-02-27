@@ -5,13 +5,12 @@ use axum::{
     routing::get,
 };
 use dotenvy;
+use graphql::{MutationRoot, QueryRoot};
 use sqlx::PgPool;
 use std::env;
-use storage::{MutationRoot, QueryRoot};
 use tokio::net::TcpListener;
 
-pub mod models;
-mod storage;
+pub mod graphql;
 
 async fn graphiql() -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint("/").finish())

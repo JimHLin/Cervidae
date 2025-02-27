@@ -1,8 +1,10 @@
-use crate::models::*;
 use async_graphql::{Context, Object, Result};
+use models::*;
 use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
 use uuid::Uuid;
 
+pub mod models;
+pub mod test_storage;
 // Root types for GraphQL schema
 pub struct QueryRoot;
 
@@ -55,6 +57,13 @@ impl QueryRoot {
             .await?;
 
         Ok(deer.into_iter().map(DeerOutput::from).collect())
+    }
+
+    async fn test_deer(&self, context: &Context<'_>) -> Result<Vec<TestDeer>> {
+        let deer = query_as!(TestDeer, "SELECT * FROM Cervidae")
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(deer)
     }
 
     async fn deer_reviews(
