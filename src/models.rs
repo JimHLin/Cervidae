@@ -1,4 +1,3 @@
-use crate::graphql::test_storage::*;
 use async_graphql::*;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -130,70 +129,6 @@ pub struct Deer {
     pub updated_at: Option<NaiveDateTime>,
     pub created_by: Uuid,
     pub updated_by: Uuid,
-}
-
-#[derive(Serialize)]
-pub struct TestDeer {
-    pub id: Uuid,
-    pub name: String,
-    pub description: Option<String>,
-    pub image_url: Option<String>,
-    pub kill_count: Option<i64>,
-    pub created_at: Option<NaiveDateTime>,
-    pub updated_at: Option<NaiveDateTime>,
-    pub created_by: Uuid,
-    pub updated_by: Uuid,
-}
-
-#[Object]
-impl TestDeer {
-    pub async fn id(&self) -> UuidScalar {
-        UuidScalar::from(self.id)
-    }
-
-    pub async fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub async fn description(&self) -> Option<&str> {
-        self.description.as_deref()
-    }
-
-    pub async fn image_url(&self) -> Option<&str> {
-        self.image_url.as_deref()
-    }
-
-    pub async fn kill_count(&self) -> Option<i64> {
-        self.kill_count
-    }
-
-    pub async fn created_at(&self) -> Option<NaiveDateTimeScalar> {
-        self.created_at.map(NaiveDateTimeScalar::from)
-    }
-
-    pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
-        self.updated_at.map(NaiveDateTimeScalar::from)
-    }
-
-    pub async fn created_by(&self, context: &Context<'_>) -> Result<UserOutput> {
-        let created_by = Uuid::from(self.created_by);
-        let user = get_user(context, created_by).await?;
-        if let Some(user) = user {
-            Ok(user)
-        } else {
-            Err(Error::new("User not found"))
-        }
-    }
-
-    pub async fn updated_by(&self, context: &Context<'_>) -> Result<UserOutput> {
-        let updated_by = Uuid::from(self.updated_by);
-        let user = get_user(context, updated_by).await?;
-        if let Some(user) = user {
-            Ok(user)
-        } else {
-            Err(Error::new("User not found"))
-        }
-    }
 }
 
 #[derive(SimpleObject, Debug, Serialize, Deserialize)]
