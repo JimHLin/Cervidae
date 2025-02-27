@@ -10,6 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <div className="min-h-screen flex flex-col justify-between">
         <div className="flex flex-col items-center justify-center h-10 bg-green-800 fixed w-full">
           <button className="text-white font-serif text-2xl tracking-wider">Cervidae</button>
         </div>
@@ -18,6 +19,7 @@ export default function RootLayout({
         </ClientProvider>
         <div className="flex flex-row gap-4 h-10 bg-green-600 w-full mt-10">
         This is a footer
+        </div>
         </div>
       </body>
     </html>

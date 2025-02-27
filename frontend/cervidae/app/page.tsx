@@ -26,7 +26,7 @@ console.log(query);
       <p className="text-xl text-gray-500">Terrifying creature stalk these lands</p>
       <div className="flex flex-row gap-4 flex-wrap justify-evenly align-bottom">
         {data?.deerAll.map((deer: any) => (
-          <DeerCard deer={deer} />
+          <DeerCard deer={deer} key={deer.id} />
         ))}
       </div>
     </div>
