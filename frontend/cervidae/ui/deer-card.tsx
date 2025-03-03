@@ -8,7 +8,7 @@ export default function DeerCard(deer: {deer: any}){
         <div className="flex flex-row justify-center items-center">
             <img src={deer.deer.imageUrl} alt="Deer" onError={(e) => {
                 e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
-            }} width="auto" height="auto" className="w-full h-40 object-scale-down" />
+            }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
         </div>
         <p className="text-2xl font-bold text-center">{deer.deer.name}</p>
         <div className="flex flex-row justify-center gap-2 items-center">
