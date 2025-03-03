@@ -1,4 +1,4 @@
-use crate::graphql::test_storage::*;
+use crate::graphql::storage::*;
 use async_graphql::*;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -74,27 +74,30 @@ pub struct User {
     pub updated_at: Option<NaiveDateTime>,
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
-pub struct UserOutput {
-    pub id: UuidScalar,
-    pub name: String,
-    pub email: String,
-    #[graphql(secret)]
-    pub password: String,
-    pub created_at: Option<NaiveDateTimeScalar>,
-    pub updated_at: Option<NaiveDateTimeScalar>,
-}
+#[Object]
+impl User {
+    pub async fn id(&self) -> UuidScalar {
+        UuidScalar::from(self.id)
+    }
 
-impl From<User> for UserOutput {
-    fn from(user: User) -> Self {
-        UserOutput {
-            id: user.id.into(),
-            name: user.name,
-            email: user.email,
-            password: user.password,
-            created_at: user.created_at.map(NaiveDateTimeScalar::from),
-            updated_at: user.updated_at.map(NaiveDateTimeScalar::from),
-        }
+    pub async fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub async fn email(&self) -> &str {
+        &self.email
+    }
+
+    pub async fn password(&self) -> &str {
+        &self.password
+    }
+
+    pub async fn created_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.created_at.map(NaiveDateTimeScalar::from)
+    }
+
+    pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.updated_at.map(NaiveDateTimeScalar::from)
     }
 }
 
@@ -102,6 +105,7 @@ impl From<User> for UserOutput {
 pub struct CreateUserInput {
     pub name: String,
     pub email: String,
+    #[graphql(secret)]
     pub password: String,
 }
 
@@ -110,6 +114,7 @@ pub struct UpdateUserInput {
     pub id: UuidScalar,
     pub name: Option<String>,
     pub email: Option<String>,
+    #[graphql(secret)]
     pub password: Option<String>,
 }
 
@@ -162,7 +167,7 @@ impl Deer {
         self.updated_at.map(NaiveDateTimeScalar::from)
     }
 
-    pub async fn created_by(&self, context: &Context<'_>) -> Result<UserOutput> {
+    pub async fn created_by(&self, context: &Context<'_>) -> Result<User> {
         let created_by = Uuid::from(self.created_by);
         let user = get_user(context, created_by).await?;
         if let Some(user) = user {
@@ -172,7 +177,7 @@ impl Deer {
         }
     }
 
-    pub async fn updated_by(&self, context: &Context<'_>) -> Result<UserOutput> {
+    pub async fn updated_by(&self, context: &Context<'_>) -> Result<User> {
         let updated_by = Uuid::from(self.updated_by);
         let user = get_user(context, updated_by).await?;
         if let Some(user) = user {
@@ -211,7 +216,7 @@ impl UpdateDeerInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Deserialize, FromRow)]
 pub struct Review {
     pub user_id: Uuid,
     pub cervidae_id: Uuid,
@@ -222,28 +227,44 @@ pub struct Review {
     pub updated_at: Option<NaiveDateTime>,
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
-pub struct ReviewOutput {
-    pub user_id: UuidScalar,
-    pub cervidae_id: UuidScalar,
-    pub danger_level: i32,
-    pub title: String,
-    pub body: String,
-    pub created_at: Option<NaiveDateTimeScalar>,
-    pub updated_at: Option<NaiveDateTimeScalar>,
-}
-
-impl From<Review> for ReviewOutput {
-    fn from(review: Review) -> Self {
-        ReviewOutput {
-            user_id: review.user_id.into(),
-            cervidae_id: review.cervidae_id.into(),
-            danger_level: review.danger_level,
-            title: review.title,
-            body: review.body,
-            created_at: review.created_at.map(NaiveDateTimeScalar::from),
-            updated_at: review.updated_at.map(NaiveDateTimeScalar::from),
+#[Object]
+impl Review {
+    pub async fn user(&self, context: &Context<'_>) -> Result<User> {
+        let user = get_user(context, self.user_id).await?;
+        if let Some(user) = user {
+            Ok(user)
+        } else {
+            Err(Error::new("User not found"))
         }
+    }
+
+    pub async fn deer(&self, context: &Context<'_>) -> Result<Deer> {
+        let deer = get_deer(context, self.cervidae_id).await?;
+        if let Some(deer) = deer {
+            Ok(deer)
+        } else {
+            Err(Error::new("Deer not found"))
+        }
+    }
+
+    pub async fn danger_level(&self) -> i32 {
+        self.danger_level
+    }
+
+    pub async fn title(&self) -> &str {
+        &self.title
+    }
+
+    pub async fn body(&self) -> &str {
+        &self.body
+    }
+
+    pub async fn created_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.created_at.map(NaiveDateTimeScalar::from)
+    }
+
+    pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.updated_at.map(NaiveDateTimeScalar::from)
     }
 }
 
@@ -271,7 +292,7 @@ impl UpdateReviewInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Deserialize, FromRow)]
 pub struct Comment {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -282,15 +303,54 @@ pub struct Comment {
     pub updated_at: Option<NaiveDateTime>,
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
-pub struct CommentOutput {
-    pub id: UuidScalar,
-    pub user_id: UuidScalar,
-    pub cervidae_id: UuidScalar,
-    pub parent_id: Option<UuidScalar>,
-    pub content: String,
-    pub created_at: Option<NaiveDateTimeScalar>,
-    pub updated_at: Option<NaiveDateTimeScalar>,
+#[Object]
+impl Comment {
+    pub async fn id(&self) -> UuidScalar {
+        UuidScalar::from(self.id)
+    }
+
+    pub async fn user(&self, context: &Context<'_>) -> Result<User> {
+        let user = get_user(context, self.user_id).await?;
+        if let Some(user) = user {
+            Ok(user)
+        } else {
+            Err(Error::new("User not found"))
+        }
+    }
+
+    pub async fn deer(&self, context: &Context<'_>) -> Result<Deer> {
+        let deer = get_deer(context, self.cervidae_id).await?;
+        if let Some(deer) = deer {
+            Ok(deer)
+        } else {
+            Err(Error::new("Deer not found"))
+        }
+    }
+
+    pub async fn parent(&self, context: &Context<'_>) -> Result<Option<Comment>> {
+        if let Some(parent_id) = self.parent_id {
+            let parent = get_comment(context, parent_id).await?;
+            if let Some(parent) = parent {
+                Ok(Some(parent))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn content(&self) -> &str {
+        &self.content
+    }
+
+    pub async fn created_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.created_at.map(NaiveDateTimeScalar::from)
+    }
+
+    pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.updated_at.map(NaiveDateTimeScalar::from)
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -299,20 +359,6 @@ pub struct CreateCommentInput {
     pub cervidae_id: UuidScalar,
     pub parent_id: Option<UuidScalar>,
     pub content: String,
-}
-
-impl From<Comment> for CommentOutput {
-    fn from(comment: Comment) -> Self {
-        CommentOutput {
-            id: comment.id.into(),
-            user_id: comment.user_id.into(),
-            cervidae_id: comment.cervidae_id.into(),
-            parent_id: comment.parent_id.map(UuidScalar::from),
-            content: comment.content,
-            created_at: comment.created_at.map(NaiveDateTimeScalar::from),
-            updated_at: comment.updated_at.map(NaiveDateTimeScalar::from),
-        }
-    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -327,7 +373,7 @@ impl UpdateCommentInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Deserialize, FromRow)]
 pub struct Crime {
     pub id: Uuid,
     pub name: String,
@@ -336,24 +382,26 @@ pub struct Crime {
     pub updated_at: Option<NaiveDateTime>,
 }
 
-#[derive(SimpleObject, Debug, Serialize, Deserialize)]
-pub struct CrimeOutput {
-    pub id: UuidScalar,
-    pub name: String,
-    pub description: Option<String>,
-    pub created_at: Option<NaiveDateTimeScalar>,
-    pub updated_at: Option<NaiveDateTimeScalar>,
-}
+#[Object]
+impl Crime {
+    pub async fn id(&self) -> UuidScalar {
+        UuidScalar::from(self.id)
+    }
 
-impl From<Crime> for CrimeOutput {
-    fn from(crime: Crime) -> Self {
-        CrimeOutput {
-            id: crime.id.into(),
-            name: crime.name,
-            description: crime.description,
-            created_at: crime.created_at.map(NaiveDateTimeScalar::from),
-            updated_at: crime.updated_at.map(NaiveDateTimeScalar::from),
-        }
+    pub async fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub async fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    pub async fn created_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.created_at.map(NaiveDateTimeScalar::from)
+    }
+
+    pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
+        self.updated_at.map(NaiveDateTimeScalar::from)
     }
 }
 
@@ -376,23 +424,35 @@ impl UpdateCrimeInput {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Deserialize, FromRow)]
 pub struct CrimeCervidae {
     pub crime_id: Uuid,
     pub cervidae_id: Uuid,
+}
+
+#[Object]
+impl CrimeCervidae {
+    pub async fn crime(&self, context: &Context<'_>) -> Result<Crime> {
+        let crime = get_crime(context, self.crime_id).await?;
+        if let Some(crime) = crime {
+            Ok(crime)
+        } else {
+            Err(Error::new("Crime not found"))
+        }
+    }
+
+    pub async fn deer(&self, context: &Context<'_>) -> Result<Deer> {
+        let deer = get_deer(context, self.cervidae_id).await?;
+        if let Some(deer) = deer {
+            Ok(deer)
+        } else {
+            Err(Error::new("Deer not found"))
+        }
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
 pub struct CrimeCervidaeInput {
     pub crime_id: UuidScalar,
     pub cervidae_id: UuidScalar,
-}
-
-impl From<CrimeCervidaeInput> for CrimeCervidae {
-    fn from(crime_cervidae: CrimeCervidaeInput) -> Self {
-        CrimeCervidae {
-            crime_id: crime_cervidae.crime_id.into(),
-            cervidae_id: crime_cervidae.cervidae_id.into(),
-        }
-    }
 }

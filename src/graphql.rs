@@ -4,7 +4,7 @@ use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
 use uuid::Uuid;
 
 pub mod models;
-pub mod test_storage;
+pub mod storage;
 // Root types for GraphQL schema
 pub struct QueryRoot;
 
@@ -24,22 +24,22 @@ fn add_to_query<'b, 'a, T>(
 #[Object]
 impl QueryRoot {
     // Add your query resolvers here
-    async fn users(&self, context: &Context<'_>) -> Result<Vec<UserOutput>> {
+    async fn users(&self, context: &Context<'_>) -> Result<Vec<User>> {
         let users = query_as!(User, "SELECT * FROM Users")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
 
-        Ok(users.into_iter().map(UserOutput::from).collect())
+        Ok(users)
     }
 
-    async fn user(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<UserOutput>> {
+    async fn user(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<User>> {
         let id: Uuid = id.into();
         let user = query_as!(User, "SELECT * FROM Users WHERE id = $1", id)
             .fetch_optional(context.data_unchecked::<PgPool>())
             .await
             .map_err(|e| e.to_string())?;
 
-        Ok(user.map(UserOutput::from))
+        Ok(user)
     }
 
     async fn deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<Deer>> {
@@ -59,67 +59,59 @@ impl QueryRoot {
         Ok(deer)
     }
 
-    async fn deer_reviews(
-        &self,
-        context: &Context<'_>,
-        id: UuidScalar,
-    ) -> Result<Vec<ReviewOutput>> {
+    async fn deer_reviews(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Review>> {
         let id: Uuid = id.into();
         let reviews = query_as!(Review, "SELECT * FROM review WHERE cervidae_id = $1", id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(reviews.into_iter().map(ReviewOutput::from).collect())
+        Ok(reviews)
     }
 
-    async fn user_reviews(
-        &self,
-        context: &Context<'_>,
-        id: UuidScalar,
-    ) -> Result<Vec<ReviewOutput>> {
+    async fn user_reviews(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Review>> {
         let id: Uuid = id.into();
         let reviews = query_as!(Review, "SELECT * FROM review WHERE user_id = $1", id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(reviews.into_iter().map(ReviewOutput::from).collect())
+        Ok(reviews)
     }
 
-    async fn deer_comments(
-        &self,
-        context: &Context<'_>,
-        id: UuidScalar,
-    ) -> Result<Vec<CommentOutput>> {
+    async fn deer_comments(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Comment>> {
         let id: Uuid = id.into();
         let comments = query_as!(Comment, "SELECT * FROM comment WHERE cervidae_id = $1", id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(comments.into_iter().map(CommentOutput::from).collect())
+        Ok(comments)
     }
 
-    async fn user_comments(
-        &self,
-        context: &Context<'_>,
-        id: UuidScalar,
-    ) -> Result<Vec<CommentOutput>> {
+    async fn user_comments(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Comment>> {
         let id: Uuid = id.into();
         let comments = query_as!(Comment, "SELECT * FROM comment WHERE user_id = $1", id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(comments.into_iter().map(CommentOutput::from).collect())
+        Ok(comments)
     }
 
-    async fn crimes(&self, context: &Context<'_>) -> Result<Vec<CrimeOutput>> {
+    async fn crimes(&self, context: &Context<'_>) -> Result<Vec<Crime>> {
         let crimes = query_as!(Crime, "SELECT * FROM crime")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(crimes.into_iter().map(CrimeOutput::from).collect())
+        Ok(crimes)
     }
 
-    async fn deer_crimes(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<CrimeOutput>> {
+    async fn deer_crimes(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Crime>> {
         let id: Uuid = id.into();
         let crimes = query_as!(Crime, "SELECT * FROM Crime WHERE id IN (SELECT crime_id FROM Crime_Cervidae WHERE cervidae_id = $1)", id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(crimes.into_iter().map(CrimeOutput::from).collect())
+        Ok(crimes)
+    }
+
+    async fn crime_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Deer>> {
+        let id: Uuid = id.into();
+        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id IN (SELECT cervidae_id FROM Crime_Cervidae WHERE crime_id = $1)", id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(deer)
     }
 }
 
@@ -128,11 +120,7 @@ pub struct MutationRoot;
 #[Object]
 impl MutationRoot {
     // Add your mutation resolvers here
-    async fn create_user(
-        &self,
-        context: &Context<'_>,
-        input: CreateUserInput,
-    ) -> Result<UserOutput> {
+    async fn create_user(&self, context: &Context<'_>, input: CreateUserInput) -> Result<User> {
         let user_id = uuid::Uuid::new_v4();
         let user = query_as!(
             User,
@@ -146,14 +134,10 @@ impl MutationRoot {
         )
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
-        Ok(user.into())
+        Ok(user)
     }
 
-    async fn update_user(
-        &self,
-        context: &Context<'_>,
-        input: UpdateUserInput,
-    ) -> Result<UserOutput> {
+    async fn update_user(&self, context: &Context<'_>, input: UpdateUserInput) -> Result<User> {
         if input.is_empty() {
             return Err(async_graphql::Error::new_with_source(
                 "No update fields provided",
@@ -177,7 +161,7 @@ impl MutationRoot {
             .build_query_as()
             .fetch_one(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(user.into())
+        Ok(user)
     }
 
     async fn delete_user(&self, context: &Context<'_>, id: UuidScalar) -> Result<String> {
@@ -261,7 +245,7 @@ impl MutationRoot {
         &self,
         context: &Context<'_>,
         input: CreateReviewInput,
-    ) -> Result<ReviewOutput> {
+    ) -> Result<Review> {
         let user_id: Uuid = input.user_id.into();
         let cervidae_id: Uuid = input.cervidae_id.into();
         let review = query_as!(
@@ -277,14 +261,14 @@ impl MutationRoot {
         )
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
-        Ok(review.into())
+        Ok(review)
     }
 
     async fn update_review(
         &self,
         context: &Context<'_>,
         input: UpdateReviewInput,
-    ) -> Result<ReviewOutput> {
+    ) -> Result<Review> {
         if input.is_empty() {
             return Err(async_graphql::Error::new_with_source(
                 "No update fields provided",
@@ -312,7 +296,7 @@ impl MutationRoot {
             .build_query_as()
             .fetch_one(context.data_unchecked::<PgPool>())
             .await?;
-        Ok(review.into())
+        Ok(review)
     }
 
     async fn delete_review(
@@ -337,7 +321,7 @@ impl MutationRoot {
         &self,
         context: &Context<'_>,
         input: CreateCommentInput,
-    ) -> Result<CommentOutput> {
+    ) -> Result<Comment> {
         let comment_id = uuid::Uuid::new_v4();
         let user_id: Uuid = input.user_id.into();
         let cervidae_id: Uuid = input.cervidae_id.into();
@@ -362,7 +346,7 @@ impl MutationRoot {
         &self,
         context: &Context<'_>,
         input: UpdateCommentInput,
-    ) -> Result<CommentOutput> {
+    ) -> Result<Comment> {
         if input.is_empty() {
             return Err(async_graphql::Error::new_with_source(
                 "No update fields provided",
@@ -396,11 +380,7 @@ impl MutationRoot {
         }
     }
 
-    async fn create_crime(
-        &self,
-        context: &Context<'_>,
-        input: CreateCrimeInput,
-    ) -> Result<CrimeOutput> {
+    async fn create_crime(&self, context: &Context<'_>, input: CreateCrimeInput) -> Result<Crime> {
         let crime_id = uuid::Uuid::new_v4();
         let crime = query_as!(
             Crime,
@@ -416,11 +396,7 @@ impl MutationRoot {
         Ok(crime.into())
     }
 
-    async fn update_crime(
-        &self,
-        context: &Context<'_>,
-        input: UpdateCrimeInput,
-    ) -> Result<CrimeOutput> {
+    async fn update_crime(&self, context: &Context<'_>, input: UpdateCrimeInput) -> Result<Crime> {
         if input.is_empty() {
             return Err(async_graphql::Error::new_with_source(
                 "No update fields provided",
