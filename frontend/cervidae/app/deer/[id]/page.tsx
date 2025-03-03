@@ -1,6 +1,6 @@
 'use client'
-import { gql, useQuery } from "urql";
-import { useEffect, useState } from "react";
+import { gql, useQuery, useMutation } from "urql";
+import { useEffect, useState, useCallback } from "react";
 import Comment from "@/ui/comment";
 
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,9 +27,31 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     const commentsQuery = gql`
     query commentsQuery ($id: String!) {
       deerComments(id: $id) {
-        id
-        userId
+      id
+        user{
+          name
+        }
+        parent{
+          content
+        }
         content
+        createdAt
+        updatedAt
+      }
+    }
+    `;
+
+    const createCommentMutation = gql`
+    mutation createCommentMutation ($input: createCommentInput!) {
+      createComment(input: $input) {
+        createdAt
+        content
+        parent{
+          name
+        }
+        user{
+          namename
+        }
       }
     }
     `;
@@ -46,6 +68,11 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         pause: !deerId, // Pause the query until deerId is set
     });
 
+    const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
+    const submit = useCallback(() => {
+      executeCreateCommentMutation({})
+    }, [])
+
     const { data, fetching, error } = result;
     if (fetching) return <p>Loading...</p>;
     if (error) return <p>Oh no... {error.message}</p>;
@@ -53,12 +80,21 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     return (
         <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
             <h1>{data?.deer.name}</h1>
-            <img src={data?.deer.imageUrl} alt="Deer" className="w-full h-40 object-scale-down" />
+            <img src={data?.deer.imageUrl} alt="Deer" onError={(e) => {
+                e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
+            }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
             <p>{data?.deer.description}</p>
             <p>Deer Kill Count: {data?.deer.killCount}</p>
-            {commentsData?.deerComments.map((comment: any) => (
-                <Comment key={comment.id} comment={comment} />
-            ))}
+            <div className="flex flex-col gap-4 w-full">
+              <h2 className="text-2xl font-bold">Comments</h2>
+              <textarea className="w-full h-20 border-2 border-gray-300 rounded-md p-2" placeholder="Add a comment" />
+              <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
+              <div className="flex flex-col gap-2 w-full mt-4">
+                  {commentsData?.deerComments.map((comment: any) => (
+                      <Comment key={comment.id} comment={comment} />
+                  ))}
+              </div>
+            </div>
         </div>
     );
 }

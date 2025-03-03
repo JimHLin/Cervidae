@@ -25,7 +25,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
     // configure cors for testing, remove in production
     let cors = CorsLayer::new()
-        .allow_origin("http://localhost:3001".parse::<HeaderValue>().unwrap()) // Allow requests from this origin
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap()) // Allow requests from this origin
         .allow_methods(Any) // Allow any HTTP method
         .allow_headers(Any);
     // setup database connection
