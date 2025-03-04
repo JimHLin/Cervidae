@@ -2,6 +2,7 @@
 import { gql, useQuery, useMutation } from "urql";
 import { useEffect, useState, useCallback } from "react";
 import Comment from "@/ui/comment";
+import { useRef } from "react";
 
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
     const [deerId, setDeerId] = useState<string | null>(null);
@@ -42,19 +43,23 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     `;
 
     const createCommentMutation = gql`
-    mutation createCommentMutation ($input: createCommentInput!) {
+    mutation createCommentMutation ($input: CreateCommentInput!) {
       createComment(input: $input) {
-        createdAt
+        idq
         content
-        parent{
+        user{
           name
         }
-        user{
-          namename
+        parent{
+          id
+          content
         }
+        createdAt
       }
     }
     `;
+
+    const commentRef = useRef<HTMLTextAreaElement | null>(null);
 
     const [result, reexecuteQuery] = useQuery({
         query: query,
@@ -70,10 +75,12 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
 
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
 
-    const submit = useCallback(() => {
-      executeCreateCommentMutation({
-        input: { deerId: deerId, content: "test", userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
-      })
+    const submit = useCallback(async () => {
+      if(commentRef.current) {
+        const test = await executeCreateCommentMutation({
+          input: { cervidaeId: deerId, content: commentRef.current.value, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
+        })
+      }
     }, [executeCreateCommentMutation, deerId])
 
     const { data, fetching, error } = result;
@@ -90,11 +97,11 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             <p>Deer Kill Count: {data?.deer.killCount}</p>
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
-              <textarea className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
+              <textarea ref={commentRef} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
               <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
-                      <Comment key={comment.id} comment={comment} />
+                      <Comment key={comment.id} comment={comment} reload={reexecuteCommentsQuery}/>
                   ))}
               </div>
             </div>
