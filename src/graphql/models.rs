@@ -99,6 +99,16 @@ impl User {
     pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
         self.updated_at.map(NaiveDateTimeScalar::from)
     }
+
+    pub async fn reviews(&self, context: &Context<'_>) -> Result<Vec<Review>> {
+        let reviews = get_reviews_by_user(context, self.id).await?;
+        Ok(reviews)
+    }
+
+    pub async fn comments(&self, context: &Context<'_>) -> Result<Vec<Comment>> {
+        let comments = get_comments_by_user(context, self.id).await?;
+        Ok(comments)
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -186,6 +196,21 @@ impl Deer {
             Err(Error::new("User not found"))
         }
     }
+
+    pub async fn reviews(&self, context: &Context<'_>) -> Result<Vec<Review>> {
+        let reviews = get_reviews_by_deer(context, self.id).await?;
+        Ok(reviews)
+    }
+
+    pub async fn comments(&self, context: &Context<'_>) -> Result<Vec<Comment>> {
+        let comments = get_comments_by_deer(context, self.id).await?;
+        Ok(comments)
+    }
+
+    pub async fn crimes(&self, context: &Context<'_>) -> Result<Vec<Crime>> {
+        let crimes = get_crimes_by_deer(context, self.id).await?;
+        Ok(crimes)
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -241,7 +266,7 @@ impl Review {
     pub async fn deer(&self, context: &Context<'_>) -> Result<Deer> {
         let deer = get_deer(context, self.cervidae_id).await?;
         if let Some(deer) = deer {
-            Ok(deer)
+            Ok(deer.into())
         } else {
             Err(Error::new("Deer not found"))
         }
