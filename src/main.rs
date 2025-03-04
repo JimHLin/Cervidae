@@ -11,7 +11,8 @@ use sqlx::PgPool;
 use std::env;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
-
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, TraceLayer};
+use tracing::{info, Level};
 pub mod graphql;
 
 async fn graphiql() -> impl IntoResponse {
@@ -36,6 +37,20 @@ async fn main() {
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(pool)
         .finish();
+
+    // Create a logging layer
+    let logging_layer = TraceLayer::new_for_http()
+        .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+        .on_request(
+            |request: &http::Request<axum::body::Body>, _span: &tracing::Span| {
+                info!(
+                    "Received request: {} {} with headers: {:?}",
+                    request.method(),
+                    request.uri(),
+                    request.headers()
+                );
+            },
+        );
 
     let app = axum::Router::new()
         .route("/", get(graphiql).post_service(GraphQL::new(schema)))
