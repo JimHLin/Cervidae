@@ -69,9 +69,12 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     });
 
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
+
     const submit = useCallback(() => {
-      executeCreateCommentMutation({})
-    }, [])
+      executeCreateCommentMutation({
+        input: { deerId: deerId, content: "test", userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
+      })
+    }, [executeCreateCommentMutation, deerId])
 
     const { data, fetching, error } = result;
     if (fetching) return <p>Loading...</p>;
@@ -87,7 +90,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             <p>Deer Kill Count: {data?.deer.killCount}</p>
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
-              <textarea className="w-full h-20 border-2 border-gray-300 rounded-md p-2" placeholder="Add a comment" />
+              <textarea className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
               <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
