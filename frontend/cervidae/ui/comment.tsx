@@ -66,7 +66,7 @@ export default function Comment(props: {comment: any, reload: () => void}){
                     ) : (
                         <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={() => setIsEditing(true)}>Edit</a>
                     )}
-                    <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={props.reload}>Delete</a>
+                    <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={deleteComment}>Delete</a>
                 </div>
             </div>
             <div className="w-full bg-gray-100 p-2 rounded-b dark:bg-gray-600">

@@ -93,7 +93,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
 
     const testcall = useCallback(() => {
       console.log('reexecuting comments query');
-      reexecuteCommentsQuery();
+      reexecuteCommentsQuery({ requestPolicy: 'network-only' });
     }, [reexecuteCommentsQuery]);
 
     const { data, fetching, error } = result;
