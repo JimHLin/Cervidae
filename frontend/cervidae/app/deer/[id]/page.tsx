@@ -13,6 +13,8 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         });
     }, [params]);
 
+    const [createCommentError, setCreateCommentError] = useState<string | null>(null);
+
     const query = gql`
     query query ($id: String!) {
       deer(id: $id) {
@@ -45,7 +47,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     const createCommentMutation = gql`
     mutation createCommentMutation ($input: CreateCommentInput!) {
       createComment(input: $input) {
-        idq
+        id
         content
         user{
           name
@@ -80,8 +82,19 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         const test = await executeCreateCommentMutation({
           input: { cervidaeId: deerId, content: commentRef.current.value, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
         })
+        if(test.error) {
+          console.log(test.error);
+          setCreateCommentError(test.error.message);
+        }else{
+          setCreateCommentError(null);
+        }
       }
     }, [executeCreateCommentMutation, deerId])
+
+    const testcall = useCallback(() => {
+      console.log('reexecuting comments query');
+      reexecuteCommentsQuery();
+    }, [reexecuteCommentsQuery]);
 
     const { data, fetching, error } = result;
     if (fetching) return <p>Loading...</p>;
@@ -98,10 +111,11 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
               <textarea ref={commentRef} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
-              <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
+                {createCommentError && <p className="text-red-500">{createCommentError}</p>}
+                <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
-                      <Comment key={comment.id} comment={comment} reload={reexecuteCommentsQuery}/>
+                      <Comment key={comment.id} comment={comment} reload={testcall}/>
                   ))}
               </div>
             </div>

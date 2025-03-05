@@ -22,18 +22,18 @@ export default function Comment(props: {comment: any, reload: () => void}){
     const commentRef = useRef<HTMLTextAreaElement | null>(null);
     const [deleteCommentResult, executeDeleteCommentMutation] = useMutation(deleteCommentMutation);
     const [updateCommentResult, executeUpdateCommentMutation] = useMutation(editCommentMutation);
-    
-    const editComment = useCallback(async () => {
-        console.log(props.comment);
-    }, []);
-
     const deleteComment = useCallback(async () => {
         console.log(props.comment);
         const result = await executeDeleteCommentMutation({
             id: props.comment.id
         });
-        console.log(result);
-    }, []);
+        if(result.error) {
+            setActionError(result.error.message);
+        }else{
+            setActionError(null);
+        }
+        props.reload();
+    }, [executeDeleteCommentMutation, props]);
 
     const updateComment = useCallback(async () => {
         console.log(props.comment);
@@ -43,11 +43,17 @@ export default function Comment(props: {comment: any, reload: () => void}){
                 content: commentRef.current?.value
             }
         });
-        console.log(result);
-        setIsEditing(false);
+        if(result.error) {
+            setActionError(result.error.message);
+        }else{
+            setActionError(null);
+            setIsEditing(false);
+            props.reload();
+        }
     }, []);
 
     const [isEditing, setIsEditing] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
 
     return (
         <div className="flex flex-col">
@@ -60,7 +66,7 @@ export default function Comment(props: {comment: any, reload: () => void}){
                     ) : (
                         <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={() => setIsEditing(true)}>Edit</a>
                     )}
-                    <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={deleteComment}>Delete</a>
+                    <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={props.reload}>Delete</a>
                 </div>
             </div>
             <div className="w-full bg-gray-100 p-2 rounded-b dark:bg-gray-600">
@@ -74,6 +80,7 @@ export default function Comment(props: {comment: any, reload: () => void}){
                 ) : (
                     <p>{props.comment.content}</p>
                 )}
+                {actionError && <p className="text-red-500">{actionError}</p>}
             </div>
         </div>
     )
