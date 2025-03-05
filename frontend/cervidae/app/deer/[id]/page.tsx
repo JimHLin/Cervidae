@@ -3,7 +3,7 @@ import { gql, useQuery, useMutation } from "urql";
 import { useEffect, useState, useCallback } from "react";
 import Comment from "@/ui/comment";
 import Review from "@/ui/review";
-import { useRef } from "react";
+import CreateReview from "@/ui/create-review";
 
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
     const [deerId, setDeerId] = useState<string | null>(null);
@@ -15,6 +15,8 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     }, [params]);
 
     const [createCommentError, setCreateCommentError] = useState<string | null>(null);
+    const [showCreateReview, setShowCreateReview] = useState<boolean>(false);
+    const [commentValue, setCommentValue] = useState<string>("");
 
     const query = gql`
     query query ($id: String!) {
@@ -73,7 +75,6 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     }
     `;
 
-    const commentRef = useRef<HTMLTextAreaElement | null>(null);
 
     const [result, reexecuteQuery] = useQuery({
         query: query,
@@ -89,10 +90,11 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
 
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
 
+
     const submit = useCallback(async () => {
-      if(commentRef.current) {
+      if(commentValue) {
         const test = await executeCreateCommentMutation({
-          input: { cervidaeId: deerId, content: commentRef.current.value, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
+          input: { cervidaeId: deerId, content: commentValue, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
         })
         if(test.error) {
           console.log(test.error);
@@ -103,7 +105,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
       }
     }, [executeCreateCommentMutation, deerId])
 
-    const testcall = useCallback(() => {
+    const reloadComments = useCallback(() => {
       console.log('reexecuting comments query');
       reexecuteCommentsQuery({ requestPolicy: 'network-only' });
     }, [reexecuteCommentsQuery]);
@@ -121,20 +123,21 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             <p>{data?.deer.description}</p>
             <p>Deer Kill Count: {data?.deer.killCount}</p>
             <div className="flex flex-row gap-4 w-full relative">
+              <CreateReview show={showCreateReview} setShow={setShowCreateReview} deerId={deerId}/>
               <button className="bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute top-0 right-0
-              hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100">+</button>
+              hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100" onClick={() => setShowCreateReview(true)}>+</button>
               {data?.deer.reviews.map((review: any) => (
                 <Review key={review.user.id} review={review}/>
               ))}
             </div>
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
-              <textarea ref={commentRef} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
+              <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
                 {createCommentError && <p className="text-red-500">{createCommentError}</p>}
                 <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
-                      <Comment key={comment.id} comment={comment} reload={testcall}/>
+                      <Comment key={comment.id} comment={comment} reload={reloadComments}/>
                   ))}
               </div>
             </div>
