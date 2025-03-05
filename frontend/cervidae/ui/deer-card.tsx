@@ -15,7 +15,7 @@ export default function DeerCard(deer: {deer: any}){
             <img className="w-4 h-4" src={Bloody.src} alt="Bloody" />
             <p>10</p>
         </div>
-        <DangerRating />
+        <DangerRating rating={deer.deer.dangerLevel}/>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">
             Deer Description that is very long and takes up a lot of space. There is even more text that will never end, followed by even more text that will never ever end.
         </p>

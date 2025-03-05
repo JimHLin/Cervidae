@@ -5,7 +5,7 @@ export default function Review(props: {review: any}){
         <div className="flex flex-col w-ful bg-orange-900 p-4 gap-4">
             <h2 className="text-2xl font-bold">{props.review.title}</h2>
             <div className="flex">
-                <DangerRating />
+                <DangerRating rating={7.9}/>
             </div>
             <p className="text-sm text-gray-50">
                 {props.review.body.slice(0, 100)}
