@@ -2,6 +2,7 @@
 import { gql, useQuery, useMutation } from "urql";
 import { useEffect, useState, useCallback } from "react";
 import Comment from "@/ui/comment";
+import Review from "@/ui/review";
 import { useRef } from "react";
 
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,17 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         description
         imageUrl
         killCount
+        reviews{
+          dangerLevel
+          title
+          body
+          createdAt
+          updatedAt
+          user{
+            id
+            name
+          }
+        }
       }
     }
     `;
@@ -108,6 +120,13 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
             <p>{data?.deer.description}</p>
             <p>Deer Kill Count: {data?.deer.killCount}</p>
+            <div className="flex flex-row gap-4 w-full relative">
+              <button className="bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute top-0 right-0
+              hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100">+</button>
+              {data?.deer.reviews.map((review: any) => (
+                <Review key={review.user.id} review={review}/>
+              ))}
+            </div>
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
               <textarea ref={commentRef} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
