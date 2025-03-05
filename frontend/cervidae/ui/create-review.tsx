@@ -18,15 +18,17 @@ export default function CreateReview(props: { show: boolean, setShow: (show: boo
     const [dangerLevel, setDangerLevel] = useState("");
     const [createReviewError, setCreateReviewError] = useState("");
     const [createReviewSuccess, setCreateReviewSuccess] = useState("");
-    const submit = useCallback(async () => {
-        console.log(title, body, dangerLevel);
+    const submit = async () => {
+        console.log(title);
+        console.log(body);
+        console.log(dangerLevel);
         if(title && body && dangerLevel) {
             let dangerLevelInt = parseInt(dangerLevel);
             if(isNaN(dangerLevelInt)) {
                 setCreateReviewError("Danger level must be a number");
                 return;
             }
-            const test = await executeCreateReviewMutation({ input: { cervidaeId: props.deerId, title: title, body: body, dangerLevel: dangerLevelInt, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c"} })
+            const test = await executeCreateReviewMutation({ input: { cervidaeId: props.deerId, title: title, body: body, dangerLevel: dangerLevelInt, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0f"} })
             if(test.error) {
                 setCreateReviewError(test.error.message);
             } else {
@@ -36,10 +38,10 @@ export default function CreateReview(props: { show: boolean, setShow: (show: boo
         }else{
             setCreateReviewError("Please fill in all fields");
         }
-    }, [executeCreateReviewMutation, props.deerId])
+    };
     return props.show ? (
-        <div className="absolute w-full h-full flex justify-center items-center" onClick={() => props.setShow(false)}>
-            <div className=" z-10 rounded-md bg-gray-800 p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute w-screen h-screen flex justify-center items-center" onClick={() => props.setShow(false)}>
+            <div className=" z-40 rounded-md bg-gray-800 p-4" onClick={(e) => e.stopPropagation()}>
                 <form className="flex flex-col gap-2">
                     <label htmlFor="title">Title</label>
                     <textarea className="w-full border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2" autoFocus name="title" value={title} onChange={(e) => setTitle(e.target.value)}></textarea>

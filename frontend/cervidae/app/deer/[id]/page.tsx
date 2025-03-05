@@ -116,16 +116,18 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     const { data: commentsData, fetching: commentsFetching, error: commentsError } = commentsResult;
     return (
         <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
+          <CreateReview show={showCreateReview} setShow={setShowCreateReview} deerId={deerId}/>
             <h1>{data?.deer.name}</h1>
             <img src={data?.deer.imageUrl} alt="Deer" onError={(e) => {
                 e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
             }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
             <p>{data?.deer.description}</p>
             <p>Deer Kill Count: {data?.deer.killCount}</p>
-            <div className="flex flex-row gap-4 w-full relative">
-              <CreateReview show={showCreateReview} setShow={setShowCreateReview} deerId={deerId}/>
-              <button className="bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute top-0 right-0
+            <div className="w-full relative">
+              <button className="z-10 bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute top-6 right-1
               hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100" onClick={() => setShowCreateReview(true)}>+</button>
+            </div>
+            <div className="flex flex-row gap-4 w-full relative overflow-auto">
               {data?.deer.reviews.map((review: any) => (
                 <Review key={review.user.id} review={review}/>
               ))}

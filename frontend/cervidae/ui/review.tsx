@@ -2,10 +2,10 @@ import DangerRating from "./danger_rating";
 
 export default function Review(props: {review: any}){
     return (
-        <div className="flex flex-col w-ful bg-orange-900 p-4 gap-4">
+        <div className="flex flex-col w-ful bg-orange-900 p-4 gap-4 max-w-64 flex-shrink-0">
             <h2 className="text-2xl font-bold">{props.review.title}</h2>
             <div className="flex">
-                <DangerRating rating={7.9}/>
+                <DangerRating rating={props.review.dangerLevel}/>
             </div>
             <p className="text-sm text-gray-50">
                 {props.review.body.slice(0, 100)}

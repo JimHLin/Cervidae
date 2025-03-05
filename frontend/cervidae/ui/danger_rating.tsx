@@ -12,7 +12,6 @@ export default function DangerRating(props: {rating: any}){
                     )
                 }else if(props.rating > index){
                     let percentage = Math.round((index + 1 - props.rating) * 100);
-                    console.log(percentage);
                     return(
                         <div key={index} className="rounded-full w-2 h-2"
                             style={{
