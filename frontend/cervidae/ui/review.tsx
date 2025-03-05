@@ -1,9 +1,15 @@
 import DangerRating from "./danger_rating";
+import Image from "next/image";
 
 export default function Review(props: {review: any}){
     return (
         <div className="flex flex-col w-ful bg-orange-900 p-4 gap-4 max-w-64 flex-shrink-0">
-            <h2 className="text-2xl font-bold">{props.review.title}</h2>
+            <div className="flex flex-row gap-2 justify-between items-center">
+                <p className="text-xl font-bold">{props.review.title}</p>
+                <p className="text-xs text-gray-50 text-right">
+                    <Image width={16} height={16} src="/options_vert.svg" alt="options" className="w-4 h-4 dark:invert"/>
+                </p>
+            </div>
             <div className="flex">
                 <DangerRating rating={props.review.dangerLevel}/>
             </div>
