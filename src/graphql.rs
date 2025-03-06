@@ -77,9 +77,13 @@ impl QueryRoot {
 
     async fn deer_comments(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Comment>> {
         let id: Uuid = id.into();
-        let comments = query_as!(Comment, "SELECT * FROM comment WHERE cervidae_id = $1", id)
-            .fetch_all(context.data_unchecked::<PgPool>())
-            .await?;
+        let comments = query_as!(
+            Comment,
+            "SELECT * FROM comment WHERE cervidae_id = $1 ORDER BY created_at DESC",
+            id
+        )
+        .fetch_all(context.data_unchecked::<PgPool>())
+        .await?;
         Ok(comments)
     }
 
@@ -339,7 +343,7 @@ impl MutationRoot {
         )
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
-        Ok(comment.into())
+        Ok(comment)
     }
 
     async fn update_comment(
