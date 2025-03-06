@@ -17,7 +17,7 @@ export default function RootLayout({
         <ClientProvider>
           {children}
         </ClientProvider>
-        <div className="flex flex-row gap-4 h-10 bg-green-600 w-full mt-10">
+        <div className="flex flex-row gap-4 h-10 bg-green-800 w-full mt-10">
         This is a footer
         </div>
         </div>
