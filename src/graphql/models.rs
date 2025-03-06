@@ -72,6 +72,7 @@ pub struct User {
     pub password: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
+    pub last_login: Option<NaiveDateTime>,
 }
 
 #[Object]
@@ -132,6 +133,13 @@ impl UpdateUserInput {
     pub fn is_empty(&self) -> bool {
         self.name.is_none() && self.email.is_none() && self.password.is_none()
     }
+}
+
+#[derive(InputObject, Deserialize)]
+pub struct LoginInput {
+    pub email: String,
+    #[graphql(secret)]
+    pub password: String,
 }
 
 #[derive(Serialize, FromRow)]

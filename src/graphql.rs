@@ -1,8 +1,8 @@
 use async_graphql::{Context, Object, Result};
+use bcrypt::{hash, verify};
 use models::*;
 use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
 use uuid::Uuid;
-
 pub mod models;
 pub mod storage;
 // Root types for GraphQL schema
@@ -126,6 +126,7 @@ impl MutationRoot {
     // Add your mutation resolvers here
     async fn create_user(&self, context: &Context<'_>, input: CreateUserInput) -> Result<User> {
         let user_id = uuid::Uuid::new_v4();
+        let hashed = hash(input.password, 10)?;
         let user = query_as!(
             User,
             r#"
@@ -134,7 +135,7 @@ impl MutationRoot {
             user_id,
             &input.name,
             &input.email,
-            &input.password,
+            hashed,
         )
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
@@ -471,6 +472,18 @@ impl MutationRoot {
         match result.rows_affected() {
             0 => Err("Crime assignment not found".into()),
             _ => Ok("Crime dropped successfully".to_string()),
+        }
+    }
+
+    async fn login(&self, context: &Context<'_>, input: LoginInput) -> Result<String> {
+        let user = query_as!(User, "SELECT * FROM Users WHERE email = $1", input.email)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
+        let password_match = bcrypt::verify(input.password, &user.password).unwrap();
+        if password_match {
+            return Ok("Login successful".to_string());
+        } else {
+            return Err("Login failed".into());
         }
     }
 }
