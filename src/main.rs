@@ -21,7 +21,7 @@ async fn graphiql() -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().ok();
+    //dotenvy::dotenv().ok();
     // initialize tracing
     tracing_subscriber::fmt::init();
     // configure cors for testing, remove in production

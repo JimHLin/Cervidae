@@ -1,8 +1,12 @@
 use async_graphql::{Context, Object, Result};
 use bcrypt::{hash, verify};
+use chrono::Utc;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use models::*;
 use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
+use std::env;
 use uuid::Uuid;
+
 pub mod models;
 pub mod storage;
 // Root types for GraphQL schema
@@ -479,9 +483,23 @@ impl MutationRoot {
         let user = query_as!(User, "SELECT * FROM Users WHERE email = $1", input.email)
             .fetch_one(context.data_unchecked::<PgPool>())
             .await?;
-        let password_match = bcrypt::verify(input.password, &user.password).unwrap();
+        let password_match = verify(input.password, &user.password).unwrap();
         if password_match {
-            return Ok("Login successful".to_string());
+            let _ = query("UPDATE Users SET last_login = NOW() WHERE id = $1")
+                .bind(user.id)
+                .execute(context.data_unchecked::<PgPool>())
+                .await?;
+            let header = Header::default();
+            let claims = Claims {
+                sub: user.id.to_string(),
+                exp: (Utc::now().timestamp() + 3600) as usize,
+                iat: Utc::now().timestamp() as usize,
+                iss: "National Cervidae Analystics Association".to_string(),
+                is_admin: user.is_admin,
+            };
+            let key = EncodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
+            let token = encode(&header, &claims, &key)?;
+            return Ok(token);
         } else {
             return Err("Login failed".into());
         }
