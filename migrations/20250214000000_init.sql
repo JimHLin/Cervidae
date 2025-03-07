@@ -1,18 +1,24 @@
 CREATE TABLE Users (
     id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ );
+
+CREATE TABLE User_Session (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id UUID NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(id)
 );
 
 CREATE TABLE Cervidae (
     id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
-    image_url VARCHAR(255),
+    image_url TEXT,
     kill_count BIGINT DEFAULT 0,
     created_by UUID NOT NULL,
     updated_by UUID NOT NULL,
@@ -26,7 +32,7 @@ CREATE TABLE Review (
     user_id UUID NOT NULL,
     cervidae_id UUID NOT NULL,
     danger_level INTEGER NOT NULL,
-    title VARCHAR(255) NOT NULL,
+    title TEXT NOT NULL,
     body TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -50,7 +56,7 @@ CREATE TABLE Comment (
 
 CREATE TABLE Crime (
     id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -67,12 +73,12 @@ CREATE TABLE Crime_Cervidae (
 /*Populating the tables with some test data: 
 Unsafe due to possible UUID collisions, but should be fine for testing*/
 
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0b', 'John Doe', 'john.doe@example.com', 'password123');
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0c', 'Jane Doe', 'jane.doe@example.com', 'password123');
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0d', 'John Deer', 'john.deer@example.com', 'password123');
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0e', 'Jane Deer', 'jane.deer@example.com', 'password123');
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0f', 'John Buck', 'john.buck@example.com', 'password123');
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0a', 'Jane Buck', 'jane.buck@example.com', 'password123');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0b', 'John Doe', 'john.doe@example.com', '$2b$10$MS4CIaBTa1mn9FFW2I.Ve.K5sDQnnNY/FWS7/OrSZpbpdYkJMvRa2');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0c', 'Jane Doe', 'jane.doe@example.com', '$2b$10$7pXcV2SuKnrQVuaNYTWUgO.F5pA6sn2FAcuNth2TO83qRATZ96BM6');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0d', 'John Deer', 'john.deer@example.com', '$2b$10$.gXTlKfAytXV8wnwUlH8f.Hb4o7WBqwHf5umOhyy6mqKZoGwPqeke');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0e', 'Jane Deer', 'jane.deer@example.com', '$2b$10$FR9Jafg9I9AcMzcz8rv09uNj1K7oAh6/hHKuXwyzQ6rwTdfXGTUsa');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0f', 'John Buck', 'john.buck@example.com', '$2b$10$xNVw32Z34DLk.51bHonJcee9Vyj/xjtNeqk8qSEAE3wekzXASlBxy"');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0a', 'Jane Buck', 'jane.buck@example.com', '$2b$10$9Ab94NSlRUHgEI88f9matOfBEdnRrCK5M1k/RjjAOnrcR3SXkzL6i');
 
 INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c7', 'Dama dama',
  'Also known as the European fallow deer, these monsters are feared across the Eurasian continent.',
