@@ -72,6 +72,7 @@ pub struct User {
     pub password: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
+    pub is_admin: bool,
     pub last_login: Option<NaiveDateTime>,
 }
 
@@ -109,6 +110,12 @@ impl User {
     pub async fn comments(&self, context: &Context<'_>) -> Result<Vec<Comment>> {
         let comments = get_comments_by_user(context, self.id).await?;
         Ok(comments)
+    }
+    pub async fn is_admin(&self) -> bool {
+        self.is_admin
+    }
+    pub async fn last_login(&self) -> Option<NaiveDateTimeScalar> {
+        self.last_login.map(NaiveDateTimeScalar::from)
     }
 }
 
@@ -488,4 +495,13 @@ impl CrimeCervidae {
 pub struct CrimeCervidaeInput {
     pub crime_id: UuidScalar,
     pub cervidae_id: UuidScalar,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub is_admin: bool,
+    pub exp: usize,
+    pub iat: usize,
+    pub iss: String,
 }

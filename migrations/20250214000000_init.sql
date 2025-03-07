@@ -3,8 +3,10 @@ CREATE TABLE Users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
  );
 
 CREATE TABLE User_Session (
@@ -73,8 +75,8 @@ CREATE TABLE Crime_Cervidae (
 /*Populating the tables with some test data: 
 Unsafe due to possible UUID collisions, but should be fine for testing*/
 
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0b', 'John Doe', 'john.doe@example.com', '$2b$10$MS4CIaBTa1mn9FFW2I.Ve.K5sDQnnNY/FWS7/OrSZpbpdYkJMvRa2');
-INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0c', 'Jane Doe', 'jane.doe@example.com', '$2b$10$7pXcV2SuKnrQVuaNYTWUgO.F5pA6sn2FAcuNth2TO83qRATZ96BM6');
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0b', 'John Doe', 'john.doe@example.com', '$2b$10$MS4CIaBTa1mn9FFW2I.Ve.K5sDQnnNY/FWS7/OrSZpbpdYkJMvRa2', true);
+INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0c', 'Jane Doe', 'jane.doe@example.com', '$2b$10$7pXcV2SuKnrQVuaNYTWUgO.F5pA6sn2FAcuNth2TO83qRATZ96BM6', true);
 INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0d', 'John Deer', 'john.deer@example.com', '$2b$10$.gXTlKfAytXV8wnwUlH8f.Hb4o7WBqwHf5umOhyy6mqKZoGwPqeke');
 INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0e', 'Jane Deer', 'jane.deer@example.com', '$2b$10$FR9Jafg9I9AcMzcz8rv09uNj1K7oAh6/hHKuXwyzQ6rwTdfXGTUsa');
 INSERT INTO Users VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0f', 'John Buck', 'john.buck@example.com', '$2b$10$xNVw32Z34DLk.51bHonJcee9Vyj/xjtNeqk8qSEAE3wekzXASlBxy"');
