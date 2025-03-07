@@ -1,6 +1,0 @@
-{
-	"dependencies": {
-		"graphql": "^16.10.0",
-		"urql": "^4.2.1"
-	}
-}
