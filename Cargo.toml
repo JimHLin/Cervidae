@@ -31,3 +31,4 @@ uuid = { version = "1.11.0", features = [
 bcrypt = "0.17"
 async-graphql = "7.0.15"
 async-graphql-axum = "7.0.15"
+jsonwebtoken = "9.3.1"
