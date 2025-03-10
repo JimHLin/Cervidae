@@ -1,5 +1,5 @@
 import '@/app/globals.css';
-import DangerRating from './danger_rating';
+import DangerRating from './danger-rating';
 import Bloody from '@/public/bloody.png'
 import Link from 'next/link';
 
