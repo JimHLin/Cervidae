@@ -1,4 +1,4 @@
-import DangerRating from "./danger_rating";
+import DangerRating from "./danger-rating";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "urql";
