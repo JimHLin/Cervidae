@@ -1,12 +1,13 @@
 use async_graphql::{Context, Object, Result};
 use bcrypt::{hash, verify};
 use chrono::Utc;
+use http::header::{HeaderValue, SET_COOKIE};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use models::*;
 use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
 use std::env;
+use tower_cookies::Cookies;
 use uuid::Uuid;
-
 pub mod models;
 pub mod storage;
 // Root types for GraphQL schema
@@ -120,6 +121,21 @@ impl QueryRoot {
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
         Ok(deer)
+    }
+
+    async fn verify_token(&self, context: &Context<'_>) -> Result<String> {
+        let cookies = context.data::<Cookies>()?;
+        let cookie = cookies.get("cerv_token");
+        if let Some(token) = cookie {
+            let key = DecodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
+            let decoded = decode::<Claims>(&token.value(), &key, &Validation::default());
+            if decoded.is_err() {
+                return Err(decoded.err().unwrap().to_string().into());
+            }
+            Ok(decoded.unwrap().claims.iss)
+        } else {
+            Err("No token found".into())
+        }
     }
 }
 
@@ -499,6 +515,11 @@ impl MutationRoot {
             };
             let key = EncodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
             let token = encode(&header, &claims, &key)?;
+
+            // Set the cookie in the response
+            let cookie_value = format!("cerv_token={}; Path=/; HttpOnly;", token);
+            context.append_http_header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?);
+
             return Ok(token);
         } else {
             return Err("Login failed".into());
