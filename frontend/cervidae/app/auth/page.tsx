@@ -28,9 +28,9 @@ export default function LoginPage(){
         }
     }
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <div className="flex flex-col items-center justify-center h-screen gap-2">
-                <h1 className="text-4xl">Login</h1>
+            <Suspense fallback={<div>Loading...</div>}>
+                <div className="flex flex-col items-center justify-center h-screen gap-2">
+                    <h1 className="text-4xl">Login</h1>
                 <form className="flex flex-col items-center justify-center gap-2" onSubmit={signIn}>
                     <div className="grid grid-cols-2 grid-flow-row gap-2">
                         <label htmlFor="email">Email</label>
