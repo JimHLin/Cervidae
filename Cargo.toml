@@ -17,6 +17,7 @@ sqlx = { version = "0.8", default-features = false, features = [
 ] }
 axum = "0.8.1"
 tower-http = { version = "0.6.2", features = ["cors", "trace", "auth"] }
+tower-cookies = "0.11.0"
 http = "1.1.0"
 serde = "1.0.217"
 tracing = "0.1.41"
