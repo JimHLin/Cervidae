@@ -497,7 +497,7 @@ pub struct CrimeCervidaeInput {
     pub cervidae_id: UuidScalar,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, SimpleObject)]
 pub struct Claims {
     pub sub: String,
     pub is_admin: bool,

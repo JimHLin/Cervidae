@@ -123,7 +123,7 @@ impl QueryRoot {
         Ok(deer)
     }
 
-    async fn verify_token(&self, context: &Context<'_>) -> Result<String> {
+    async fn verify_token(&self, context: &Context<'_>) -> Result<Claims> {
         let cookies = context.data::<Cookies>()?;
         let cookie = cookies.get("cerv_token");
         if let Some(token) = cookie {
@@ -132,9 +132,9 @@ impl QueryRoot {
             if decoded.is_err() {
                 return Err(decoded.err().unwrap().to_string().into());
             }
-            Ok(decoded.unwrap().claims.iss)
+            Ok(decoded.unwrap().claims)
         } else {
-            Err("No token found".into())
+            Err(async_graphql::Error::new("No token found"))
         }
     }
 }
@@ -508,7 +508,7 @@ impl MutationRoot {
             let header = Header::default();
             let claims = Claims {
                 sub: user.id.to_string(),
-                exp: (Utc::now().timestamp() + 3600) as usize,
+                exp: (Utc::now().timestamp() + 86400) as usize,
                 iat: Utc::now().timestamp() as usize,
                 iss: "National Cervidae Analystics Association".to_string(),
                 is_admin: user.is_admin,
@@ -524,5 +524,23 @@ impl MutationRoot {
         } else {
             return Err("Login failed".into());
         }
+    }
+    async fn logout(&self, context: &Context<'_>) -> Result<String> {
+        let header = Header::default();
+        let claims = Claims {
+            sub: "".to_string(),
+            exp: (Utc::now().timestamp() - 86400) as usize,
+            iat: Utc::now().timestamp() as usize,
+            iss: "National Cervidae Analystics Association".to_string(),
+            is_admin: false,
+        };
+        let key = EncodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
+        let token = encode(&header, &claims, &key)?;
+
+        // Set the cookie in the response
+        let cookie_value = format!("cerv_token={}; Path=/; HttpOnly;", token);
+        context.append_http_header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?);
+
+        return Ok(token);
     }
 }
