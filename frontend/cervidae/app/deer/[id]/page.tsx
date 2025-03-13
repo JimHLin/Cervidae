@@ -1,9 +1,11 @@
 'use client'
 import { gql, useQuery, useMutation } from "urql";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useContext } from "react";
 import Comment from "@/ui/comment";
 import Review from "@/ui/review";
 import CreateReview from "@/ui/create-review";
+import { AuthContext } from "@/ui/auth-provider";
+import { redirect } from "next/navigation";
 
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
     const [deerId, setDeerId] = useState<string | null>(null);

@@ -14,7 +14,6 @@ export default function Page(){
       }
     }
   `;
-console.log(query);
   const [result, reexecuteQuery] = useQuery({query: query});
   const { data, fetching, error } = result;
 
