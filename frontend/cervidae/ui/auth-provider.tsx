@@ -53,9 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let test = await logoutExecuteQuery();
     reexecuteQuery({ requestPolicy: "network-only" });
   };
-  const validate = async () => {
-    await reexecuteQuery({ requestPolicy: "network-only" });
-  }
 
   return (
     <AuthContext.Provider value={{ isAuthenticated: !result.error && !result.fetching,
