@@ -1,12 +1,15 @@
 'use client'
 import { gql, useQuery, useMutation } from "urql";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useContext } from "react";
 import Comment from "@/ui/comment";
 import Review from "@/ui/review";
 import CreateReview from "@/ui/create-review";
-
+import { AuthContext } from "@/ui/auth-provider";
+import { redirect } from "next/navigation";
+import { useAuth } from "@/ui/auth-provider";
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
     const [deerId, setDeerId] = useState<string | null>(null);
+    const { isAuthenticated, login, logout, isAdmin, userId } = useAuth();
 
     useEffect(() => {
         params.then(resolvedParams => {
@@ -46,6 +49,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
       deerComments(id: $id) {
       id
         user{
+          id
           name
         }
         parent{
@@ -135,15 +139,25 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
                  editReview={populateReviewForm}/>
               ))}
             </div>
+            {isAuthenticated && !data?.deer.reviews.find((review: any) => review.user.id == userId) &&
             <div className="w-full relative">
               <button className="z-10 bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute bottom-10 right-1
               hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100" onClick={() => setShowCreateReview(true)}>+</button>
             </div>
+            }
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
-              <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
+              {isAuthenticated ? (
+                <div className="flex flex-col gap-2 w-full">
+                  <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
                 {createCommentError && <p className="text-red-500">{createCommentError}</p>}
-                <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
+                  <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 w-full mt-4">
+                  <p>Please login to add a comment</p>
+                </div>
+              )}
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
                       <Comment key={comment.id} comment={comment} reload={reloadComments}/>

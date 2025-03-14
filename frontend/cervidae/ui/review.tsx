@@ -1,7 +1,8 @@
-import DangerRating from "./danger_rating";
+import DangerRating from "./danger-rating";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "urql";
+import { useAuth } from "./auth-provider";
 const deleteReviewString = `
     mutation deleteReviewMutation($input: UpdateReviewInput!) {
         deleteReview(input: $input)
@@ -32,16 +33,17 @@ export default function Review(props: {review: any, deerId: string|null, reload:
         };
     }, [handleClickOutside]);
 
-
-
+    const { isAuthenticated, isAdmin, userId } = useAuth();
     return (
         <div className="flex flex-col w-ful bg-orange-900 p-4 gap-4 max-w-64 flex-shrink-0">
             <div className="flex flex-row gap-2 justify-between items-baseline">
                 <p className="text-xl font-bold">{props.review.title}</p>
+                {(isAdmin || (userId && userId == props.review.user.id)) && 
                 <div className="text-xs text-gray-50 text-right relative">
                     <button onClick={() => setShowOptions(!showOptions)}>
                         <Image width={16} height={16} src="/options_vert.svg" alt="options" className="w-4 h-4 dark:invert hover:cursor-pointer hover:scale-110 transition-all duration-300 select-none"/>
                     </button>
+
                     {showOptions && 
                     <div ref={optionsRef} className="z-20 flex flex-col justify-start text-left absolute top-0 right-0 dark:bg-orange-800 border border-gray-300 rounded-s">
                         <button className="text-xs dark:text-gray-50 p-1 hover:bg-orange-900 hover:cursor-pointer transition-all duration-300"
@@ -53,6 +55,7 @@ export default function Review(props: {review: any, deerId: string|null, reload:
                     </div>
                     }
                 </div>
+                }
             </div>
             <div className="flex">
                 <DangerRating rating={props.review.dangerLevel}/>

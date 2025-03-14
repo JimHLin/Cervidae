@@ -1,6 +1,7 @@
 'use client'
 import DeerCard from "@/ui/deer-card";
 import { gql, useQuery} from "urql";
+import { useAuth } from "@/ui/auth-provider";
 
 export default function Page(){
     const query = gql`
@@ -14,10 +15,9 @@ export default function Page(){
       }
     }
   `;
-console.log(query);
   const [result, reexecuteQuery] = useQuery({query: query});
   const { data, fetching, error } = result;
-
+  const { isAuthenticated, isAdmin } = useAuth();
 
   if (fetching) return <p>Loading...</p>;
   if (error) return <p>Oh no... {error.message}</p>;

@@ -1,8 +1,13 @@
 use async_graphql::{Context, Object, Result};
+use bcrypt::{hash, verify};
+use chrono::Utc;
+use http::header::{HeaderValue, SET_COOKIE};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use models::*;
 use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
+use std::env;
+use tower_cookies::Cookies;
 use uuid::Uuid;
-
 pub mod models;
 pub mod storage;
 // Root types for GraphQL schema
@@ -117,6 +122,21 @@ impl QueryRoot {
             .await?;
         Ok(deer)
     }
+
+    async fn verify_token(&self, context: &Context<'_>) -> Result<Claims> {
+        let cookies = context.data::<Cookies>()?;
+        let cookie = cookies.get("cerv_token");
+        if let Some(token) = cookie {
+            let key = DecodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
+            let decoded = decode::<Claims>(&token.value(), &key, &Validation::default());
+            if decoded.is_err() {
+                return Err(decoded.err().unwrap().to_string().into());
+            }
+            Ok(decoded.unwrap().claims)
+        } else {
+            Err(async_graphql::Error::new("No token found"))
+        }
+    }
 }
 
 pub struct MutationRoot;
@@ -126,6 +146,7 @@ impl MutationRoot {
     // Add your mutation resolvers here
     async fn create_user(&self, context: &Context<'_>, input: CreateUserInput) -> Result<User> {
         let user_id = uuid::Uuid::new_v4();
+        let hashed = hash(input.password, 10)?;
         let user = query_as!(
             User,
             r#"
@@ -134,7 +155,7 @@ impl MutationRoot {
             user_id,
             &input.name,
             &input.email,
-            &input.password,
+            hashed,
         )
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
@@ -472,5 +493,54 @@ impl MutationRoot {
             0 => Err("Crime assignment not found".into()),
             _ => Ok("Crime dropped successfully".to_string()),
         }
+    }
+
+    async fn login(&self, context: &Context<'_>, input: LoginInput) -> Result<String> {
+        let user = query_as!(User, "SELECT * FROM Users WHERE email = $1", input.email)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
+        let password_match = verify(input.password, &user.password).unwrap();
+        if password_match {
+            let _ = query("UPDATE Users SET last_login = NOW() WHERE id = $1")
+                .bind(user.id)
+                .execute(context.data_unchecked::<PgPool>())
+                .await?;
+            let header = Header::default();
+            let claims = Claims {
+                sub: user.id.to_string(),
+                exp: (Utc::now().timestamp() + 86400) as usize,
+                iat: Utc::now().timestamp() as usize,
+                iss: "National Cervidae Analystics Association".to_string(),
+                is_admin: user.is_admin,
+            };
+            let key = EncodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
+            let token = encode(&header, &claims, &key)?;
+
+            // Set the cookie in the response
+            let cookie_value = format!("cerv_token={}; Path=/; HttpOnly;", token);
+            context.append_http_header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?);
+
+            return Ok(token);
+        } else {
+            return Err("Login failed".into());
+        }
+    }
+    async fn logout(&self, context: &Context<'_>) -> Result<String> {
+        let header = Header::default();
+        let claims = Claims {
+            sub: "".to_string(),
+            exp: (Utc::now().timestamp() - 86400) as usize,
+            iat: Utc::now().timestamp() as usize,
+            iss: "National Cervidae Analystics Association".to_string(),
+            is_admin: false,
+        };
+        let key = EncodingKey::from_secret(env::var("CLIENT_SECRET")?.as_bytes());
+        let token = encode(&header, &claims, &key)?;
+
+        // Set the cookie in the response
+        let cookie_value = format!("cerv_token={}; Path=/; HttpOnly;", token);
+        context.append_http_header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?);
+
+        return Ok(token);
     }
 }

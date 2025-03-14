@@ -72,6 +72,8 @@ pub struct User {
     pub password: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
+    pub is_admin: bool,
+    pub last_login: Option<NaiveDateTime>,
 }
 
 #[Object]
@@ -109,6 +111,12 @@ impl User {
         let comments = get_comments_by_user(context, self.id).await?;
         Ok(comments)
     }
+    pub async fn is_admin(&self) -> bool {
+        self.is_admin
+    }
+    pub async fn last_login(&self) -> Option<NaiveDateTimeScalar> {
+        self.last_login.map(NaiveDateTimeScalar::from)
+    }
 }
 
 #[derive(InputObject, Debug, Serialize, Deserialize)]
@@ -132,6 +140,13 @@ impl UpdateUserInput {
     pub fn is_empty(&self) -> bool {
         self.name.is_none() && self.email.is_none() && self.password.is_none()
     }
+}
+
+#[derive(InputObject, Deserialize)]
+pub struct LoginInput {
+    pub email: String,
+    #[graphql(secret)]
+    pub password: String,
 }
 
 #[derive(Serialize, FromRow)]
@@ -480,4 +495,13 @@ impl CrimeCervidae {
 pub struct CrimeCervidaeInput {
     pub crime_id: UuidScalar,
     pub cervidae_id: UuidScalar,
+}
+
+#[derive(Debug, Serialize, Deserialize, SimpleObject)]
+pub struct Claims {
+    pub sub: String,
+    pub is_admin: bool,
+    pub exp: usize,
+    pub iat: usize,
+    pub iss: String,
 }

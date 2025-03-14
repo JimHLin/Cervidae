@@ -1,28 +1,30 @@
 import type { Metadata } from "next";
 import './globals.css'
-import ClientProvider from "@/ui/client_provider";
-import Link from 'next/link';
-
+import ClientProvider from "@/ui/client-provider";
+import { AuthProvider } from "@/ui/auth-provider";
+import Header from "@/ui/header";
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <div className="min-h-screen flex flex-col justify-between">
-        <div className="flex flex-col items-center justify-center h-10 bg-green-800 fixed w-full z-50">
-          <Link href="/" className="text-white font-serif text-2xl tracking-wider">Cervidae</Link>
+        <html lang="en">
+          <body>
+          <ClientProvider>
+          <AuthProvider>
+            <Header />
+        <div className="pt-10">
+            {children}
+          
         </div>
-        <ClientProvider>
-          {children}
-        </ClientProvider>
         <div className="flex flex-row gap-4 h-10 bg-green-800 w-full mt-10">
         This is a footer
         </div>
-        </div>
+        </AuthProvider>
+    </ClientProvider>
       </body>
     </html>
+    
   )
 }

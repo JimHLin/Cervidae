@@ -92,6 +92,8 @@ struct User {
     name: String,
     email: String,
     password: String,
+    is_admin: bool,
+    last_login: Option<NaiveDateTime>,
     created_at: Option<NaiveDateTime>,
     updated_at: Option<NaiveDateTime>,
 }
