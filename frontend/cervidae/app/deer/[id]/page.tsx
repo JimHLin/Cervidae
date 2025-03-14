@@ -6,9 +6,10 @@ import Review from "@/ui/review";
 import CreateReview from "@/ui/create-review";
 import { AuthContext } from "@/ui/auth-provider";
 import { redirect } from "next/navigation";
-
+import { useAuth } from "@/ui/auth-provider";
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
     const [deerId, setDeerId] = useState<string | null>(null);
+    const { isAuthenticated, login, logout, isAdmin, userId } = useAuth();
 
     useEffect(() => {
         params.then(resolvedParams => {
@@ -48,6 +49,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
       deerComments(id: $id) {
       id
         user{
+          id
           name
         }
         parent{
@@ -143,9 +145,17 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             </div>
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
-              <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
+              {isAuthenticated ? (
+                <div className="flex flex-col gap-2 w-full">
+                  <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
                 {createCommentError && <p className="text-red-500">{createCommentError}</p>}
-                <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
+                  <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 w-full mt-4">
+                  <p>Please login to add a comment</p>
+                </div>
+              )}
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
                       <Comment key={comment.id} comment={comment} reload={reloadComments}/>

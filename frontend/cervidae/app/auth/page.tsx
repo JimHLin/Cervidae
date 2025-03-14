@@ -2,6 +2,7 @@
 import { Suspense } from 'react';
 import { useMutation, gql } from 'urql';
 import { useAuth } from '@/ui/auth-provider';
+import { redirect } from 'next/navigation';
 
 const loginString = gql`
     mutation Login($input: LoginInput!) {
@@ -11,12 +12,15 @@ const loginString = gql`
 
 export default function LoginPage(){
     const [loginResult, executeLogin] = useMutation(loginString);
-    const { isAuthenticated, login, logout } = useAuth();
+    const { isAuthenticated, login, logout, validate } = useAuth(); 
+    if(isAuthenticated){
+        redirect('/');
+    }
     async function signIn(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const email = formData.get('email');
-        const password = formData.get('password');
+        const password = formData.get('password');  
         const loginInput = {
             email: email as string,
             password: password as string
@@ -26,6 +30,7 @@ export default function LoginPage(){
             console.log(response.error);
         }else{
             console.log('Login successful:', response.data);
+            validate();
         }
     }
     return (

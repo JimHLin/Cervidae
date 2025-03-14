@@ -11,6 +11,7 @@ interface AuthContextType {
   userId: string;
   login: () => void;
   logout: () => void;
+  validate: () => void;
 }
 
 const verifyString = gql`
@@ -45,19 +46,20 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [result, reexecuteQuery] = useQuery({ query: verifyString });
     const [logoutResult, logoutExecuteQuery] = useMutation(logoutString);
-console.log(result)
   const login = () => { 
     redirect("/auth");
   };
-
   const logout = async () => {
     let test = await logoutExecuteQuery();
-    console.log(test);
+    reexecuteQuery({ requestPolicy: "network-only" });
   };
+  const validate = async () => {
+    await reexecuteQuery({ requestPolicy: "network-only" });
+  }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: result.error == null,
-     login, logout, isAdmin: result.data?.verifyToken?.isAdmin, userId: result.data?.verifyToken?.sub }}>
+    <AuthContext.Provider value={{ isAuthenticated: !result.error && !result.fetching,
+     login, logout, isAdmin: result.data?.verifyToken?.isAdmin, userId: result.data?.verifyToken?.sub, validate: reexecuteQuery }}>
       {children}
     </AuthContext.Provider>
   );

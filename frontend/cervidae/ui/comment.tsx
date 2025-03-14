@@ -2,9 +2,11 @@
 import { gql } from "urql";
 import { useCallback, useState, useRef } from "react";
 import { useMutation } from "urql";
+import { useAuth } from "./auth-provider";
 
 
 export default function Comment(props: {comment: any, reload: () => void}){
+    const { isAuthenticated, userId, isAdmin } = useAuth();
     const deleteCommentMutation = gql`
     mutation deleteCommentMutation($id: String!) {
         deleteComment(id: $id)
@@ -51,14 +53,13 @@ export default function Comment(props: {comment: any, reload: () => void}){
             props.reload();
         }
     }, []);
-
     const [isEditing, setIsEditing] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
-
     return (
         <div className="flex flex-col">
             <div className="flex flex-row items-baseline justify-between">
                 <p className="text-xs pl-2 pr-2 pt-1 pb-1 rounded-t dark:bg-gray-700">{props.comment.user.name}</p>
+                {(isAdmin || (userId && userId == props.comment.user.id)) &&
                 <div className="flex flex-row items-center gap-2">
                     <p className="text-xs">{props.comment.createdAt}</p>
                     {isEditing ? (
@@ -68,6 +69,7 @@ export default function Comment(props: {comment: any, reload: () => void}){
                     )}
                     <a className="text-xs text-blue-400 hover:underline cursor-pointer select-none" onClick={deleteComment}>Delete</a>
                 </div>
+                }
             </div>
             <div className="w-full bg-gray-100 p-2 rounded-b dark:bg-gray-600">
                 {props.comment.parent && (

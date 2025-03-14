@@ -15,7 +15,6 @@ const registerString = gql`
 
 
 export default function RegisterPage(){
-    console.log('test');
     const [registerResult, executeRegister] = useMutation(registerString);
 
     const register = async function register(event: React.FormEvent<HTMLFormElement>) {

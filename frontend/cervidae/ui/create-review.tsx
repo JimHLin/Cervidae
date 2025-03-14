@@ -1,6 +1,8 @@
 import { setServers } from "dns";
 import { useState, useEffect } from "react";
 import { useMutation, gql } from "urql";
+import { useAuth } from "./auth-provider";
+
 const createReviewMutation = gql`
     mutation createReviewMutation($input: CreateReviewInput!) {
         createReview(input: $input) {
@@ -25,6 +27,7 @@ export default function CreateReview(props: { show: boolean, setShow: (show: boo
     const [body, setBody] = useState("");
     const [dangerLevel, setDangerLevel] = useState("");
     const [submissionError, setSubmissionError] = useState("");
+    const { userId } = useAuth();
     const submit = async () => {
         if(title && body && dangerLevel) {
             let dangerLevelInt = parseInt(dangerLevel);
@@ -35,7 +38,7 @@ export default function CreateReview(props: { show: boolean, setShow: (show: boo
             const test = props.review ?  await executeUpdateReviewMutation({ input: { cervidaeId: props.deerId, title: title,
                 body: body, dangerLevel: dangerLevelInt, userId: props.review.user.id} }): 
             await executeCreateReviewMutation({ input: { cervidaeId: props.deerId, title: title,
-                body: body, dangerLevel: dangerLevelInt, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c"} })
+                body: body, dangerLevel: dangerLevelInt, userId: userId} })
                 
             if(test.error) {
                 setSubmissionError(test.error.message);
