@@ -139,10 +139,12 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
                  editReview={populateReviewForm}/>
               ))}
             </div>
+            {isAuthenticated && !data?.deer.reviews.find((review: any) => review.user.id == userId) &&
             <div className="w-full relative">
               <button className="z-10 bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute bottom-10 right-1
               hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100" onClick={() => setShowCreateReview(true)}>+</button>
             </div>
+            }
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
               {isAuthenticated ? (
