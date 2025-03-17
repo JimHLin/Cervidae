@@ -18,7 +18,7 @@ export default function Header() {
             )}
             {isAuthenticated && (
                 <div className="flex flex-row items-center">
-                    <Link href={`/user/${userId}`} className="hover:text-gray-300 hover:shadow-md hover:shadow-black rounded-md px-2 py-1">
+                    <Link href={`/user/${userId}/profile`} className="hover:text-gray-300 hover:shadow-md hover:shadow-black rounded-md px-2 py-1">
                         <img src={Profile.src} alt="Profile" width={20} height={20} className="cursor-pointer invert" />
                     </Link>
                     <button className="hover:text-gray-300 hover:shadow-md hover:shadow-black rounded-md px-2 py-1" onClick={logout}>Logout</button>
