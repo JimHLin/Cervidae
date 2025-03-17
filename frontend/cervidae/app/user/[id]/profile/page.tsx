@@ -2,7 +2,7 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "urql";
 import edit  from "@/public/edit.svg"
-
+import { useAuth } from "@/ui/auth-provider";
 const UserQuery = `
     query User($id: String!) {
         user(id: $id) {
@@ -15,6 +15,10 @@ const UserQuery = `
     }
 `;
 export default function Page() {
+    const { userId } = useAuth();
+    if(!userId) {
+        return <div>Unauthorized: Please login to view this page</div>
+    }
     const { id } = useParams();
     const [result, reexecuteQuery] = useQuery({
         query: UserQuery,
