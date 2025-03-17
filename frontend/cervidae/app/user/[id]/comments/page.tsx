@@ -3,7 +3,7 @@ import {useQuery} from 'urql'
 import { useParams } from 'next/navigation'
 import Comment from '@/ui/comment'
 const commentsQueryString = `
-    query Comments($id: ID!) {
+    query Comments($id: UuidScalar!) {
         userComments(id: $id) {
             id
             parent{
@@ -23,10 +23,12 @@ const commentsQueryString = `
 export default function Comments() {
     const params = useParams();
     const id = params.id;
+    console.log(id);
     const [result, reexecuteQuery] = useQuery({
         query: commentsQueryString,
         variables: {id}
     })
+    console.log(result);
     return (
         <div>
             <h1>Comments</h1>
