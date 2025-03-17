@@ -3,7 +3,7 @@ import { gql } from "urql";
 import { useCallback, useState, useRef } from "react";
 import { useMutation } from "urql";
 import { useAuth } from "./auth-provider";
-
+import reply from "@/public/reply.svg";
 
 export default function Comment(props: {comment: any, reload: () => void}){
     const { isAuthenticated, userId, isAdmin } = useAuth();
@@ -83,6 +83,17 @@ export default function Comment(props: {comment: any, reload: () => void}){
                     <p>{props.comment.content}</p>
                 )}
                 {actionError && <p className="text-red-500">{actionError}</p>}
+                <div className="flex flex-row justify-between">
+                    {props.comment.editedAt != props.comment.createdAt ? (
+                        <p className="text-xs dark: text-gray-300 opacity-90">Edited at: {props.comment.updatedAt}</p>
+                    ) : (
+                        <p></p>
+                    )}
+                    <button className="hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md">
+                        <img src={reply.src} alt="reply" className="w-4 h-4 float-right" />
+                    </button>
+                </div>
+                
             </div>
         </div>
     )
