@@ -44,11 +44,11 @@ export default function RegisterPage(){
                 <form className="flex flex-col items-center justify-center gap-2" onSubmit={register}>
                     <div className="grid grid-cols-2 grid-flow-row gap-2">
                         <label htmlFor="email">Email</label>
-                        <input type="text" placeholder="Email" name="email" className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2"/>
+                        <input type="text" autoComplete="none" placeholder="Email" name="email" className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2"/>
                         <label htmlFor="name">Name</label>
-                        <input type="text" placeholder="Name" name="name" className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2"/>
+                        <input type="text" autoComplete="none" placeholder="Name" name="name" className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2"/>
                         <label htmlFor="password">Password</label>
-                        <input type="password" placeholder="Password" name="password" className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2"/>
+                        <input type="password" autoComplete="none" placeholder="Password" name="password" className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2"/>
                     </div>
                     <button type="submit">Register</button>
                 </form>
