@@ -132,14 +132,21 @@ pub struct UpdateUserInput {
     pub id: UuidScalar,
     pub name: Option<String>,
     pub email: Option<String>,
-    #[graphql(secret)]
-    pub password: Option<String>,
 }
 
 impl UpdateUserInput {
     pub fn is_empty(&self) -> bool {
-        self.name.is_none() && self.email.is_none() && self.password.is_none()
+        self.name.is_none() && self.email.is_none()
     }
+}
+
+#[derive(InputObject, Debug, Deserialize)]
+pub struct ResetPasswordInput {
+    pub id: UuidScalar,
+    #[graphql(secret)]
+    pub current_password: String,
+    #[graphql(secret)]
+    pub new_password: String,
 }
 
 #[derive(InputObject, Deserialize)]
