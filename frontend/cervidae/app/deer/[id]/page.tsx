@@ -96,7 +96,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     const submit = async () => {
       if(commentValue.length > 0) {
         const test = await executeCreateCommentMutation({
-          input: { cervidaeId: deerId, content: commentValue, userId: userId, parentId: null }
+          input: { cervidaeId: deerId, content: commentValue, userId: userId, parentId: parentComment }
         })
         if(test.error) {
           console.log(test.error);
@@ -150,7 +150,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
               <h2 className="text-2xl font-bold">Comments</h2>
               {isAuthenticated ? (
                 <div className="flex flex-col gap-2 w-full">
-                  {parentComment && <p>Replying to: {parentComment}</p>}
+                  {parentComment && <p>Replying to: {parentComment}<span className="text-lg float-right text-red-500 cursor-pointer" onClick={() => setParentComment(null)}>x</span></p>}
                   <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
                 {createCommentError && <p className="text-red-500">{createCommentError}</p>}
                   <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>

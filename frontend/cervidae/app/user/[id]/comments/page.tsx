@@ -33,7 +33,7 @@ export default function Comments() {
         <div>
             <h1>Comments</h1>
             {result.data?.userComments.map((comment: any) => (
-                <Comment key={comment.id} comment={comment} reload={() => {}} />
+                <Comment key={comment.id} comment={comment} reload={() => {}} setParentComment={() => {}} />
             ))}
         </div>
     )

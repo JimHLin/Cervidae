@@ -5,7 +5,7 @@ import { useMutation } from "urql";
 import { useAuth } from "./auth-provider";
 import reply from "@/public/reply.svg";
 
-export default function Comment(props: {comment: any, reload: () => void}){
+export default function Comment(props: {comment: any, reload: () => void, hideReply?: boolean, setParentComment?: (comment: string) => void}){
     const { isAuthenticated, userId, isAdmin } = useAuth();
     const deleteCommentMutation = gql`
     mutation deleteCommentMutation($id: String!) {
@@ -20,7 +20,9 @@ export default function Comment(props: {comment: any, reload: () => void}){
         }
     }
     `;
-
+    console.log(props.comment.user.id);
+    console.log(userId);
+    console.log(props.comment.user.id == userId);
     const commentRef = useRef<HTMLTextAreaElement | null>(null);
     const [deleteCommentResult, executeDeleteCommentMutation] = useMutation(deleteCommentMutation);
     const [updateCommentResult, executeUpdateCommentMutation] = useMutation(editCommentMutation);
@@ -89,9 +91,11 @@ export default function Comment(props: {comment: any, reload: () => void}){
                     ) : (
                         <p></p>
                     )}
-                    <button className="hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md">
+                    {!props.hideReply && props.comment.user.id != userId &&
+                    <button className="hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md" onClick={() => props.setParentComment?.(props.comment.id)}>
                         <img src={reply.src} alt="reply" className="w-4 h-4 float-right" />
                     </button>
+                    }
                 </div>
                 
             </div>
