@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "urql";
 import edit  from "@/public/edit.svg"
 import { useAuth } from "@/ui/auth-provider";
 import { useState, useEffect } from "react";
-
+import ResetPassword from "@/ui/reset-password";
 const UserQuery = `
     query User($id: String!) {
         user(id: $id) {
@@ -29,6 +29,12 @@ const UserMutation = `
     }
 `;
 
+const resetPasswordMutation = `
+    mutation ResetPassword($input: ResetPasswordInput) {
+        resetUserPassword(input: $input)
+    }
+`;
+
 export default function Page() {
     const { id } = useParams();
     const { userId } = useAuth();
@@ -43,9 +49,10 @@ export default function Page() {
         setEmail(result.data?.user.email);
     }, [result.data]);
 
-    const [password, setPassword] = useState("");
     const [mutationResult, executeMutation] = useMutation(UserMutation);
+    const [resetPasswordResult, executeResetPassword] = useMutation(resetPasswordMutation);
     const [editing, setEditing] = useState(false);
+    const [show, setShow] = useState(false);
 
     if(!userId) {
         return <div>Unauthorized: Please login to view this page</div>
@@ -62,8 +69,12 @@ export default function Page() {
         console.log(result);
     }
 
+
     return (
         <div className="mt-5">
+            {show && (
+                <ResetPassword setShow={setShow} resetPassword={executeResetPassword} id={id as string}/>
+            )}
             <div className="flex justify-end">
                 {!editing && (
                     <img src={edit.src} alt="edit" className="w-7 h-7 invert mr-4 cursor-pointer hover:bg-gray-400 rounded-md p-1" onClick={() => setEditing(!editing)} />
@@ -98,7 +109,7 @@ export default function Page() {
             {
                 !editing && (
                     <div className="flex justify-center">
-                        <button className="bg-green-700 text-white px-4 py-2 rounded-md mt-4">Click here to reset password</button>
+                        <button onClick={() => setShow(true)} className="bg-green-700 text-white px-4 py-2 rounded-md mt-4">Click here to reset password</button>
                     </div>
                 )
             }
