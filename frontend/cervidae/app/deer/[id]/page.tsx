@@ -91,11 +91,10 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         variables: { id: deerId },
         pause: !deerId, // Pause the query until deerId is set
     });
-
+    
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
-
-    const submit = useCallback(async () => {
-      if(commentValue) {
+    const submit = async () => {
+      if(commentValue.length > 0) {
         const test = await executeCreateCommentMutation({
           input: { cervidaeId: deerId, content: commentValue, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
         })
@@ -106,8 +105,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
           setCreateCommentError(null);
         }
       }
-    }, [executeCreateCommentMutation, deerId])
-
+    }
     const reloadComments = useCallback(() => {
       console.log('reexecuting comments query');
       reexecuteCommentsQuery({ requestPolicy: 'network-only' });
