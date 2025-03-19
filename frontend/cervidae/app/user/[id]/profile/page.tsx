@@ -66,7 +66,7 @@ export default function Page() {
                 email,
             },
         });
-        console.log(result);
+        setEditing(false)
     }
 
 
