@@ -110,7 +110,6 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     const [parentComment, setParentComment] = useState<string|null>(null);
 
     const reloadComments = useCallback(() => {
-      console.log('reexecuting comments query');
       reexecuteCommentsQuery({ requestPolicy: 'network-only' });
     }, [reexecuteCommentsQuery]);
 
