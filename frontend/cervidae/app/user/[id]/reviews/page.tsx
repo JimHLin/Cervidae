@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import Review from '@/ui/review'
 import { useState } from 'react'
 import CreateReview from '@/ui/create-review'
+import Link from 'next/link'
 
 const reviewsQueryString = `
     query Reviews($id: ID!) {
@@ -23,12 +24,23 @@ const reviewsQueryString = `
             updatedAt
         }
     }
-`
+`;
+const getUserQueryString = `
+    query User($id: ID!) {
+        user(id: $id) {
+            name
+        }
+    }
+`;
 export default function Reviews() {
     const params = useParams();
     const id = params.id;
     const [result, reexecuteQuery] = useQuery({
         query: reviewsQueryString,
+        variables: {id}
+    })
+    const [userResult, reexecuteUserQuery] = useQuery({
+        query: getUserQueryString,
         variables: {id}
     })
     const [show, setShow] = useState(false);
@@ -45,12 +57,20 @@ export default function Reviews() {
             {show && (
                 <CreateReview show={show} setShow={setShow} deerId={editedDeerId} review={editedReview} setReview={setEditedReview} />
             )}
-            <h1>Reviews</h1>
+            {userResult.data?.user.name ?
+            <h2 className="text-2xl font-bold">{userResult.data?.user.name}'s Reviews:</h2>
+            :
+            <h2 className="text-2xl font-bold">Comments:</h2>
+            }
+            <div className="flex flex-row gap-3 pt-4 flex-wrap justify-evenly">
             {result.data?.userReviews.map((review: any) => (
-                <Review key={review.deer.id} review={review} deerId={review.deer.id} 
-                reload={() => {reexecuteQuery({ requestPolicy: 'network-only' });}} editReview={(() => editReview(review))} />
+                <div key={review.deer.id}>
+                    <label className="text-md">On <Link href={`/deer/${review.deer.id}`} className="text-blue-500 hover:underline">{review.deer.name}</Link></label>
+                    <Review review={review} deerId={review.deer.id} 
+                    reload={() => {reexecuteQuery({ requestPolicy: 'network-only' });}} editReview={(() => editReview(review))} />
+                </div>
             ))}
-            
+            </div>
         </div>
     )
 }
