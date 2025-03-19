@@ -176,9 +176,6 @@ impl MutationRoot {
         if let Some(email) = &input.email {
             add_to_query(&mut query, "email", email);
         }
-        if let Some(password) = &input.password {
-            add_to_query(&mut query, "password", password);
-        }
         query.push(" WHERE id = ");
         query.push_bind(user_id);
         query.push(" RETURNING *;");
@@ -187,6 +184,29 @@ impl MutationRoot {
             .fetch_one(context.data_unchecked::<PgPool>())
             .await?;
         Ok(user)
+    }
+
+    async fn reset_user_password(
+        &self,
+        context: &Context<'_>,
+        input: ResetPasswordInput,
+    ) -> Result<String> {
+        let user_id = Uuid::from(input.id);
+        let user = query_as!(User, "SELECT * FROM Users WHERE id = $1", user_id)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
+        let password_match = verify(input.current_password, &user.password).unwrap();
+        if password_match {
+            let hashed = hash(input.new_password, 10)?;
+            let _ = query("UPDATE Users SET password = $1 WHERE id = $2")
+                .bind(hashed)
+                .bind(user_id)
+                .execute(context.data_unchecked::<PgPool>())
+                .await?;
+            Ok("Password reset successfully".to_string())
+        } else {
+            Err("Current password is incorrect".into())
+        }
     }
 
     async fn delete_user(&self, context: &Context<'_>, id: UuidScalar) -> Result<String> {

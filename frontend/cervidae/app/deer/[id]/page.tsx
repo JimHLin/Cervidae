@@ -93,11 +93,10 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     });
 
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
-
-    const submit = useCallback(async () => {
-      if(commentValue) {
+    const submit = async () => {
+      if(commentValue.length > 0) {
         const test = await executeCreateCommentMutation({
-          input: { cervidaeId: deerId, content: commentValue, userId: "fabfe0da-9a94-46d3-b380-73cf71246c0c", parentId: null }
+          input: { cervidaeId: deerId, content: commentValue, userId: userId, parentId: parentComment }
         })
         if(test.error) {
           console.log(test.error);
@@ -106,10 +105,11 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
           setCreateCommentError(null);
         }
       }
-    }, [executeCreateCommentMutation, deerId])
+    }
+
+    const [parentComment, setParentComment] = useState<string|null>(null);
 
     const reloadComments = useCallback(() => {
-      console.log('reexecuting comments query');
       reexecuteCommentsQuery({ requestPolicy: 'network-only' });
     }, [reexecuteCommentsQuery]);
 
@@ -149,6 +149,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
               <h2 className="text-2xl font-bold">Comments</h2>
               {isAuthenticated ? (
                 <div className="flex flex-col gap-2 w-full">
+                  {parentComment && <p>Replying to: {parentComment}<span className="text-lg float-right text-red-500 cursor-pointer" onClick={() => setParentComment(null)}>x</span></p>}
                   <textarea value={commentValue} onChange={(e) => setCommentValue(e.target.value)} className="w-full h-20 border-2 border-gray-300 dark:bg-gray-900 rounded-md p-2" placeholder="Add a comment" />
                 {createCommentError && <p className="text-red-500">{createCommentError}</p>}
                   <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={submit}>Add Comment</button>
@@ -160,7 +161,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
               )}
               <div className="flex flex-col gap-2 w-full mt-4">
                   {commentsData?.deerComments.map((comment: any) => (
-                      <Comment key={comment.id} comment={comment} reload={reloadComments}/>
+                      <Comment key={comment.id} comment={comment} reload={reloadComments} setParentComment={setParentComment}/>
                   ))}
               </div>
             </div>

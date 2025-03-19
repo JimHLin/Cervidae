@@ -62,7 +62,7 @@ export default function CreateReview(props: { show: boolean, setShow: (show: boo
         }
     }, [props.review]);
     return props.show ? (
-        <div className="absolute w-screen h-screen flex justify-center items-center" onClick={() => {props.setShow(false); props.setReview(null);}}>
+        <div className="absolute w-screen flex justify-center items-center" onClick={() => {props.setShow(false); props.setReview(null);}}>
             <div className=" z-40 rounded-md bg-gray-800 p-4" onClick={(e) => e.stopPropagation()}>
                 <form className="flex flex-col gap-2">
                     <label htmlFor="title">Title</label>
