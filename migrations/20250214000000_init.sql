@@ -27,7 +27,8 @@ CREATE TABLE Cervidae (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (created_by) REFERENCES Users(id),
-    FOREIGN KEY (updated_by) REFERENCES Users(id)
+    FOREIGN KEY (updated_by) REFERENCES Users(id),
+    approved BOOLEAN DEFAULT FALSE NOT NULL
 );
 
 CREATE TABLE Review (
@@ -87,13 +88,13 @@ INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c7', 'Dama dama',
  'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Dama_dama_01.jpg/220px-Dama_dama_01.jpg',
  5923952,
  'fabfe0da-9a94-46d3-b380-73cf71246c0b',
- 'fabfe0da-9a94-46d3-b380-73cf71246c0b');
+ 'fabfe0da-9a94-46d3-b380-73cf71246c0b', true);
  INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c8', 'Cervus elaphus',
  'Also known as the red deer, their fangs are always red with the blood of their victims.',
  'https://en.wikipedia.org/wiki/Red_deer#/media/File:Cervus_elaphus_Luc_Viatour_6.jpg',
  6231982,
  'fabfe0da-9a94-46d3-b380-73cf71246c0c',
- 'fabfe0da-9a94-46d3-b380-73cf71246c0c');
+ 'fabfe0da-9a94-46d3-b380-73cf71246c0c', true);
  INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c9', 'Cervus nippon',
  'Also known as the sika deer, northern spotted deer, or the Japanese deer. It is native to much of East Asia and introduced'
  ' to other parts of the world. Its aggressive nature and unquenched bloodlust has earned it the nickname "The Shogun", 
@@ -101,7 +102,7 @@ INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c7', 'Dama dama',
  'https://en.wikipedia.org/wiki/Sika_deer#/media/File:Cervus_nippon_002.jpg',
  7213528,
  'fabfe0da-9a94-46d3-b380-73cf71246c0b',
- 'fabfe0da-9a94-46d3-b380-73cf71246c0b');
+ 'fabfe0da-9a94-46d3-b380-73cf71246c0b', true);
  INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c0', 'Cervus canadensis',
  'Also known as the elk or wapiti, they are the second largest species within the deer family. They utilize their massive size'
  ' to cause Earthquakes across the North American continent. Some have even been known to cause tsunamis. It is said that they do' 
@@ -109,7 +110,7 @@ INSERT INTO Cervidae VALUES('99ad6de2-af4c-4104-86dd-cfb211d249c7', 'Dama dama',
  'https://en.wikipedia.org/wiki/Moose#/media/File:Moose_in_Yellowstone_National_Park_2015.jpg',
  10000000,
  'fabfe0da-9a94-46d3-b380-73cf71246c0c',
- 'fabfe0da-9a94-46d3-b380-73cf71246c0c');
+ 'fabfe0da-9a94-46d3-b380-73cf71246c0c', true);
 
 INSERT INTO Review VALUES('fabfe0da-9a94-46d3-b380-73cf71246c0d', '99ad6de2-af4c-4104-86dd-cfb211d249c7', 7, 'Honestly kinda mid',
     'No slouch, but they could definitely do better.');
