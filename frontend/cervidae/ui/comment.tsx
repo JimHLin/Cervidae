@@ -20,9 +20,6 @@ export default function Comment(props: {comment: any, reload: () => void, hideRe
         }
     }
     `;
-    console.log(props.comment.user.id);
-    console.log(userId);
-    console.log(props.comment.user.id == userId);
     const commentRef = useRef<HTMLTextAreaElement | null>(null);
     const [deleteCommentResult, executeDeleteCommentMutation] = useMutation(deleteCommentMutation);
     const [updateCommentResult, executeUpdateCommentMutation] = useMutation(editCommentMutation);
@@ -40,7 +37,6 @@ export default function Comment(props: {comment: any, reload: () => void, hideRe
     }, [executeDeleteCommentMutation, props]);
 
     const updateComment = useCallback(async () => {
-        console.log(props.comment);
         const result = await executeUpdateCommentMutation({
             input: {
                 id: props.comment.id,
@@ -58,9 +54,9 @@ export default function Comment(props: {comment: any, reload: () => void, hideRe
     const [isEditing, setIsEditing] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
     return (
-        <div className="flex flex-col">
-            <div className="flex flex-row items-baseline justify-between">
-                <p className="text-xs pl-2 pr-2 pt-1 pb-1 rounded-t dark:bg-gray-700">{props.comment.user.name}</p>
+        <div className="w-full bg-gray-100 rounded-b dark:bg-gray-600">
+            <div className="flex flex-row items-baseline justify-between dar: bg-gray-700 p-1">
+                <p className="text-xs">{props.comment.user.name}</p>
                 {(isAdmin || (userId && userId == props.comment.user.id)) &&
                 <div className="flex flex-row items-center gap-2">
                     <p className="text-xs">{props.comment.createdAt}</p>
@@ -73,7 +69,7 @@ export default function Comment(props: {comment: any, reload: () => void, hideRe
                 </div>
                 }
             </div>
-            <div className="w-full bg-gray-100 p-2 rounded-b dark:bg-gray-600">
+            <div className="p-2 pb-0 pt-1">
                 {props.comment.parent && (
                     <div className="ml-2 mr-2 rounded-md bg-gray-900 p-1 mb-2">
                         <p>{props.comment.parent?.content}</p>
@@ -85,8 +81,8 @@ export default function Comment(props: {comment: any, reload: () => void, hideRe
                     <p>{props.comment.content}</p>
                 )}
                 {actionError && <p className="text-red-500">{actionError}</p>}
-                <div className="flex flex-row justify-between">
-                    {props.comment.editedAt != props.comment.createdAt ? (
+                <div className="flex flex-row justify-between pb-1 pt-1">
+                    {props.comment.updatedAt != props.comment.createdAt ? (
                         <p className="text-xs dark: text-gray-300 opacity-90">Edited at: {props.comment.updatedAt}</p>
                     ) : (
                         <p></p>
@@ -97,7 +93,6 @@ export default function Comment(props: {comment: any, reload: () => void, hideRe
                     </button>
                     }
                 </div>
-                
             </div>
         </div>
     )
