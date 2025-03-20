@@ -170,6 +170,23 @@ pub struct Deer {
     pub approved: bool,
 }
 
+impl Clone for Deer {
+    fn clone(&self) -> Self {
+        Deer {
+            id: self.id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            image_url: self.image_url.clone(),
+            kill_count: self.kill_count,
+            created_at: self.created_at.clone(),
+            updated_at: self.updated_at.clone(),
+            created_by: self.created_by,
+            updated_by: self.updated_by,
+            approved: self.approved,
+        }
+    }
+}
+
 #[Object]
 impl Deer {
     pub async fn id(&self) -> UuidScalar {
@@ -512,4 +529,48 @@ pub struct Claims {
     pub exp: usize,
     pub iat: usize,
     pub iss: String,
+}
+
+#[derive(Serialize, SimpleObject)]
+pub struct DeerEdge {
+    pub node: Deer,
+    pub cursor: String,
+}
+
+#[derive(Serialize, SimpleObject)]
+pub struct DeerConnection {
+    pub edges: Vec<DeerEdge>,
+    pub page_info: PageInfo,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct PageInfo {
+    pub has_next_page: Option<bool>,
+    pub has_previous_page: Option<bool>,
+    pub start_cursor: Option<Uuid>,
+    pub end_cursor: Option<Uuid>,
+    pub total_count: Option<i64>,
+}
+
+#[Object]
+impl PageInfo {
+    pub async fn has_next_page(&self) -> Option<bool> {
+        self.has_next_page
+    }
+
+    pub async fn has_previous_page(&self) -> Option<bool> {
+        self.has_previous_page
+    }
+
+    pub async fn start_cursor(&self) -> Option<UuidScalar> {
+        self.start_cursor.map(UuidScalar::from)
+    }
+
+    pub async fn end_cursor(&self) -> Option<UuidScalar> {
+        self.end_cursor.map(UuidScalar::from)
+    }
+
+    pub async fn total_count(&self) -> Option<i64> {
+        self.total_count
+    }
 }
