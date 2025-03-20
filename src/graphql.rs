@@ -164,161 +164,66 @@ impl QueryRoot {
                 "Invalid arguments: first and last cannot be 0",
             ));
         }
-        let deer: Vec<Deer>;
+        let mut query_builder: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM ");
         if first.is_some() {
             if after.is_some() {
                 let after: Uuid = after.unwrap().into();
-                deer = query_as!(
-                    Deer,
-                    "SELECT * FROM Cervidae WHERE id > $1 ORDER BY id ASC LIMIT $2",
-                    after,
-                    first.unwrap()
-                )
-                .fetch_all(context.data_unchecked::<PgPool>())
-                .await?;
-                if deer.is_empty() {
-                    return Err(async_graphql::Error::new("No deer found"));
-                }
-                let start_cursor = deer.first().unwrap().id;
-                let end_cursor = deer.last().unwrap().id;
-                let page_test = query_as!(
-                    PageInfo,
-                    r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1) > 0) AS has_next_page, 
-            ((SELECT Count(*) FROM Cervidae WHERE id < $2) > 0) AS has_previous_page, 
-            $1 AS start_cursor, $2 AS end_cursor, 
-            COUNT(*) AS total_count FROM Cervidae"#,
-                    start_cursor,
-                    end_cursor
-                )
-                .fetch_one(context.data_unchecked::<PgPool>())
-                .await?;
-                let deer_edges = deer
-                    .iter()
-                    .map(|deer: &Deer| DeerEdge {
-                        node: deer.clone(),
-                        cursor: deer.id.to_string(),
-                    })
-                    .collect();
-                let deer_connection = DeerConnection {
-                    edges: deer_edges,
-                    page_info: page_test,
-                };
-                return Ok(vec![deer_connection]);
+                query_builder.push("Cervidae WHERE id > ");
+                query_builder.push_bind(after);
+                query_builder.push(" ORDER BY id ASC LIMIT ");
+                query_builder.push_bind(first.unwrap());
             } else {
-                deer = query_as!(
-                    Deer,
-                    "SELECT * FROM Cervidae ORDER BY id ASC LIMIT $1",
-                    first.unwrap()
-                )
-                .fetch_all(context.data_unchecked::<PgPool>())
-                .await?;
-                if deer.is_empty() {
-                    return Err(async_graphql::Error::new("No deer found"));
-                }
-                let start_cursor = deer.first().unwrap().id;
-                let end_cursor = deer.last().unwrap().id;
-                let page_test = query_as!(
-                    PageInfo,
-                    r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1) > 0) AS has_next_page, 
-            ((SELECT Count(*) FROM Cervidae WHERE id < $2) > 0) AS has_previous_page, 
-            $1 AS start_cursor, $2 AS end_cursor, 
-            COUNT(*) AS total_count FROM Cervidae"#,
-                    start_cursor,
-                    end_cursor
-                )
-                .fetch_one(context.data_unchecked::<PgPool>())
-                .await?;
-                let deer_edges = deer
-                    .iter()
-                    .map(|deer: &Deer| DeerEdge {
-                        node: deer.clone(),
-                        cursor: deer.id.to_string(),
-                    })
-                    .collect();
-                let deer_connection = DeerConnection {
-                    edges: deer_edges,
-                    page_info: page_test,
-                };
-                return Ok(vec![deer_connection]);
+                query_builder.push("Cervidae ORDER BY id ASC LIMIT ");
+                query_builder.push_bind(first.unwrap());
             }
         } else if last.is_some() {
             if let Some(before) = before {
                 let before: Uuid = before.into();
-                deer = query_as!(
-                    Deer,
-                    "SELECT * FROM (SELECT * FROM Cervidae WHERE id < $1 ORDER BY id DESC LIMIT $2) AS deer ORDER BY id ASC",
-                    before,
-                    last.unwrap()
-                )
-                .fetch_all(context.data_unchecked::<PgPool>())
-                .await?;
-                if deer.is_empty() {
-                    return Err(async_graphql::Error::new("No deer found"));
-                }
-                let start_cursor = deer.first().unwrap().id;
-                let end_cursor = deer.last().unwrap().id;
-                let page_test = query_as!(
-                    PageInfo,
-                    r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1) > 0) AS has_next_page, 
-            ((SELECT Count(*) FROM Cervidae WHERE id < $2) > 0) AS has_previous_page, 
-            $1 AS start_cursor, $2 AS end_cursor, 
-            COUNT(*) AS total_count FROM Cervidae"#,
-                    start_cursor,
-                    end_cursor
-                )
-                .fetch_one(context.data_unchecked::<PgPool>())
-                .await?;
-                let deer_edges = deer
-                    .iter()
-                    .map(|deer: &Deer| DeerEdge {
-                        node: deer.clone(),
-                        cursor: deer.id.to_string(),
-                    })
-                    .collect();
-                let deer_connection = DeerConnection {
-                    edges: deer_edges,
-                    page_info: page_test,
-                };
-                return Ok(vec![deer_connection]);
+                query_builder.push("(SELECT * FROM Cervidae WHERE id < ");
+                query_builder.push_bind(before);
+                query_builder.push(" ORDER BY id DESC LIMIT ");
+                query_builder.push_bind(last.unwrap());
+                query_builder.push(") AS deer ORDER BY id ASC");
             } else {
-                deer = query_as!(
-                    Deer,
-                    "SELECT * FROM (SELECT * FROM Cervidae ORDER BY id DESC LIMIT $1) AS deer ORDER BY id ASC",
-                    last.unwrap()
-                )
-                .fetch_all(context.data_unchecked::<PgPool>())
-                .await?;
-                if deer.is_empty() {
-                    return Err(async_graphql::Error::new("No deer found"));
-                }
-                let start_cursor = deer.first().unwrap().id;
-                let end_cursor = deer.last().unwrap().id;
-                let page_test = query_as!(
-                    PageInfo,
-                    r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1) > 0) AS has_next_page, 
+                query_builder.push("(SELECT * FROM Cervidae ORDER BY id DESC LIMIT ");
+                query_builder.push_bind(last.unwrap());
+                query_builder.push(") AS deer ORDER BY id ASC");
+            }
+        } else {
+            return Err(async_graphql::Error::new("Invalid pagination arguments"));
+        }
+        let deer: Vec<Deer> = query_builder
+            .build_query_as()
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+        if deer.is_empty() {
+            return Err(async_graphql::Error::new("No deer found"));
+        }
+        let start_cursor = deer.first().unwrap().id;
+        let end_cursor = deer.last().unwrap().id;
+        let page_test = query_as!(
+            PageInfo,
+            r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1) > 0) AS has_next_page, 
             ((SELECT Count(*) FROM Cervidae WHERE id < $2) > 0) AS has_previous_page, 
             $1 AS start_cursor, $2 AS end_cursor, 
             COUNT(*) AS total_count FROM Cervidae"#,
-                    start_cursor,
-                    end_cursor
-                )
-                .fetch_one(context.data_unchecked::<PgPool>())
-                .await?;
-                let deer_edges = deer
-                    .iter()
-                    .map(|deer: &Deer| DeerEdge {
-                        node: deer.clone(),
-                        cursor: deer.id.to_string(),
-                    })
-                    .collect();
-                let deer_connection = DeerConnection {
-                    edges: deer_edges,
-                    page_info: page_test,
-                };
-                return Ok(vec![deer_connection]);
-            }
-        }
-        Err(async_graphql::Error::new("Invalid pagination arguments"))
+            end_cursor,
+            start_cursor
+        )
+        .fetch_one(context.data_unchecked::<PgPool>())
+        .await?;
+        let deer_edges = deer
+            .iter()
+            .map(|deer: &Deer| DeerEdge {
+                node: deer.clone(),
+                cursor: deer.id.to_string(),
+            })
+            .collect();
+        let deer_connection = DeerConnection {
+            edges: deer_edges,
+            page_info: page_test,
+        };
+        Ok(vec![deer_connection])
     }
 }
 
