@@ -2,7 +2,7 @@ export default function Switch(props: {onChange: (value: boolean) => void, value
     return (
         <div className="flex flex-row gap-4">
             <label htmlFor="viewPending">View Pending</label>
-            <div className={`relative w-10 h-5 bg-gray-300 rounded-full cursor-pointer transition-all duration-200 ${props.value ? "bg-green-600" : "bg-gray-300"}`} onClick={() => props.onChange(!props.value)}>
+            <div className={`relative w-10 h-5 bg-gray-300 rounded-full cursor-pointer transition-colors duration-200 ${props.value ? "bg-green-600" : "bg-gray-300"}`} onClick={() => props.onChange(!props.value)}>
                 <input name="viewPending" type="checkbox" className="hidden" checked={props.value} onChange={(e) => {
                     props.onChange(e.target.checked);
                 }} />

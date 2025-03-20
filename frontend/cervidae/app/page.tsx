@@ -2,7 +2,8 @@
 import DeerCard from "@/ui/deer-card";
 import { gql, useQuery} from "urql";
 import { useAuth } from "@/ui/auth-provider";
-
+import { useState } from "react";
+import Switch from "@/ui/switch";
 export default function Page(){
     const query = gql`
     query {
@@ -15,19 +16,42 @@ export default function Page(){
       }
     }
   `;
+  const pendingQuery = gql`
+    query {
+      deerPending {
+        id
+        name
+        description
+        imageUrl
+        killCount
+      }
+    }
+  `;
   const [result, reexecuteQuery] = useQuery({query: query});
   const { data, fetching, error } = result;
   const { isAuthenticated, isAdmin } = useAuth();
-
+  const [seePending, setSeePending] = useState(false);
+  const [pendingResult, pendingExecuteQuery] = useQuery({query: pendingQuery});
   if (fetching) return <p>Loading...</p>;
   if (error) return <p>Oh no... {error.message}</p>;
   return (
     <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
+      {isAdmin && (
+        <Switch onChange={setSeePending} value={seePending} />
+      )}
       <p className="text-xl text-gray-500">Terrifying creatures stalk these lands</p>
-      <div className="flex flex-row gap-4 flex-wrap justify-evenly align-bottom">
-        {data?.deerAll.map((deer: any) => (
-          <DeerCard deer={deer} key={deer.id} />
-        ))}
+      <div className="flex flex-row gap-4 flex-wrap justify-evenly align-bottom transition-all duration-500">
+        {seePending ? (
+          pendingResult.data?.deerPending.length > 0 ?
+          pendingResult.data?.deerPending.map((deer: any) => (
+            <DeerCard deer={deer} key={deer.id} />
+          )) : <p>No pending deer</p>
+        ) : (
+          data?.deerAll.length > 0 ?
+          data?.deerAll.map((deer: any) => (
+            <DeerCard deer={deer} key={deer.id} />
+          )) : <p>No deer found</p>
+        )}
       </div>
     </div>
   )
