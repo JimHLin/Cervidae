@@ -57,7 +57,15 @@ impl QueryRoot {
     }
 
     async fn deer_all(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae")
+        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE approved = true")
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+
+        Ok(deer)
+    }
+
+    async fn deer_pending(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
+        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE approved = false")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
 
@@ -184,6 +192,18 @@ impl MutationRoot {
             .fetch_one(context.data_unchecked::<PgPool>())
             .await?;
         Ok(user)
+    }
+
+    async fn approve_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Deer> {
+        let id: Uuid = id.into();
+        let deer = query_as!(
+            Deer,
+            "UPDATE Cervidae SET approved = true WHERE id = $1 RETURNING *",
+            id
+        )
+        .fetch_one(context.data_unchecked::<PgPool>())
+        .await?;
+        Ok(deer)
     }
 
     async fn reset_user_password(
