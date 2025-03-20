@@ -24,11 +24,11 @@ CREATE TABLE Cervidae (
     kill_count BIGINT DEFAULT 0,
     created_by UUID NOT NULL,
     updated_by UUID NOT NULL,
+    approved BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (created_by) REFERENCES Users(id),
-    FOREIGN KEY (updated_by) REFERENCES Users(id),
-    approved BOOLEAN DEFAULT FALSE NOT NULL
+    FOREIGN KEY (updated_by) REFERENCES Users(id)
 );
 
 CREATE TABLE Review (

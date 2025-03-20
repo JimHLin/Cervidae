@@ -167,6 +167,7 @@ pub struct Deer {
     pub updated_at: Option<NaiveDateTime>,
     pub created_by: Uuid,
     pub updated_by: Uuid,
+    pub approved: bool,
 }
 
 #[Object]
