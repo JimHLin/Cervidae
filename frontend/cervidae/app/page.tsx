@@ -4,6 +4,7 @@ import { gql, useQuery} from "urql";
 import { useAuth } from "@/ui/auth-provider";
 import { useState, useCallback } from "react";
 import Switch from "@/ui/switch";
+import Link from "next/link";
 export default function Page(){
 
   const pendingQuery = gql`
@@ -82,7 +83,10 @@ export default function Page(){
   return (
     <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
       {isAdmin && (
-        <Switch onChange={setSeePending} value={seePending} />
+        <div className="flex flex-row justify-center items-center gap-4">
+          <Link href="/deer/create">Create Deer</Link>
+          <Switch onChange={setSeePending} value={seePending} />
+        </div>
       )}
       <p className="text-xl text-gray-500">Terrifying creatures stalk these lands</p>
       <div className="flex flex-row gap-4 flex-wrap justify-evenly align-bottom transition-all duration-500">
@@ -90,7 +94,7 @@ export default function Page(){
           <DeerCard deer={deer} key={deer.id} />
         ))}
       </div>
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-row justify-center items-center gap-4">
           <button onClick={handlePrevious} disabled={fetching || currentPage === 1} className="bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-500">
             Previous
           </button>
