@@ -7,7 +7,7 @@ export default function DeerCard(deer: {deer: any}){
   return (
     <Link href={`/deer/${deer.deer.id}`} className="flex flex-col justify-center align-middle p-2 dark:bg-gray-800 border-2 border-green-900  rounded-lg w-64 gap-1">
         <div className="flex flex-row justify-center items-center">
-            <img src={deer.deer.imageUrl} alt="Deer" onError={(e) => {
+            <img src={deer.deer.imageUrl ? deer.deer.imageUrl : "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp"} alt="Deer" onError={(e) => {
                 e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
             }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
         </div>

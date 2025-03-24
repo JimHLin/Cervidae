@@ -128,7 +128,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
           <CreateReview show={showCreateReview} setShow={setShowCreateReview} deerId={deerId} review={review} setReview={setReview}/>
             <h1>{data?.deer.name}</h1>
-            <img src={data?.deer.imageUrl} alt="Deer" onError={(e) => {
+            <img src={data?.deer.imageUrl ? data?.deer.imageUrl : "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp"} alt="Deer" onError={(e) => {
                 e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
             }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
             <p>{data?.deer.description}</p>
