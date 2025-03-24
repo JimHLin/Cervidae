@@ -173,7 +173,7 @@ impl QueryRoot {
                 query_builder.push(" ORDER BY id ASC LIMIT ");
                 query_builder.push_bind(first.unwrap());
             } else {
-                query_builder.push("Cervidae ORDER BY id ASC LIMIT ");
+                query_builder.push("Cervidae WHERE approved = true ORDER BY id ASC LIMIT ");
                 query_builder.push_bind(first.unwrap());
             }
         } else if last.is_some() {
@@ -187,7 +187,7 @@ impl QueryRoot {
             } else {
                 query_builder.push("(SELECT * FROM Cervidae ORDER BY id DESC LIMIT ");
                 query_builder.push_bind(last.unwrap());
-                query_builder.push(") AS deer ORDER BY id ASC");
+                query_builder.push(") AS deer WHERE approved = true ORDER BY id ASC");
             }
         } else {
             return Err(async_graphql::Error::new("Invalid pagination arguments"));
@@ -203,10 +203,10 @@ impl QueryRoot {
         let end_cursor = deer.last().unwrap().id;
         let page_test = query_as!(
             PageInfo,
-            r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1) > 0) AS has_next_page, 
-            ((SELECT Count(*) FROM Cervidae WHERE id < $2) > 0) AS has_previous_page, 
+            r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1 AND approved = true) > 0) AS has_next_page, 
+            ((SELECT Count(*) FROM Cervidae WHERE id < $2 AND approved = true) > 0) AS has_previous_page, 
             $1 AS start_cursor, $2 AS end_cursor, 
-            COUNT(*) AS total_count FROM Cervidae"#,
+            COUNT(*) AS total_count FROM Cervidae WHERE approved = true"#,
             end_cursor,
             start_cursor
         )
