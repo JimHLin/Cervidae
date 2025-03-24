@@ -6,25 +6,12 @@ import { useState, useCallback } from "react";
 import Switch from "@/ui/switch";
 import Link from "next/link";
 export default function Page(){
-
-  const pendingQuery = gql`
-    query {
-      deerPending {
-        id
-        name
-        description
-        imageUrl
-        killCount
-      }
-    }
-  `;
   const entriesPerPage = 2;
   const { isAuthenticated, isAdmin } = useAuth();
   const [seePending, setSeePending] = useState(false);
-  const [pendingResult, pendingExecuteQuery] = useQuery({query: pendingQuery});
   const testQuery = gql`
     query ($first: Int, $after: String, $last: Int, $before: String) {
-        deerConnections(first: $first, after: $after, last: $last, before: $before) {
+        ${seePending ? "deerPendingConnections" : "deerConnections"}(first: $first, after: $after, last: $last, before: $before) {
           edges{
             node{
               id
@@ -73,10 +60,11 @@ export default function Page(){
       setCurrentPage(currentPage - 1);
     }
   };
+  console.log(testResult);
   const { data, fetching, error } = testResult;
-  const items = data?.deerConnections[0].edges.map((edge: any) => edge.node);
-  const totalPages = Math.ceil(data?.deerConnections[0].pageInfo.totalCount / entriesPerPage);
-  console.log(items);
+  const dataToUse = seePending ? data?.deerPendingConnections : data?.deerConnections;
+  const items = fetching ? [] : dataToUse.length > 0 ? dataToUse[0].edges.map((edge: any) => edge.node) : [];
+  const totalPages = fetching ? 0 : dataToUse.length > 0 ? Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage) : 0;
   
   if (fetching) return <p>Loading...</p>;
   if (error) return <p>Oh no... {error.message}</p>;
