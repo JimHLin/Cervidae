@@ -198,8 +198,10 @@ const content = `
 </blockquote>
 `
 
-export default () => {
+export default (props: {setValue: (value: string) => void}) => {
   return (
-    <EditorProvider slotBefore={<MenuBar />} extensions={extensions} content={content}></EditorProvider>
+    <EditorProvider slotBefore={<MenuBar />} extensions={extensions} content={content} immediatelyRender={false} onUpdate={({ editor }) => {
+      props.setValue(editor.getHTML())
+    }}></EditorProvider>
   )
 }
