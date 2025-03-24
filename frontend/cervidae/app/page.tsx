@@ -42,9 +42,9 @@ export default function Page(){
   });
 
   const handleNext = () => {
-    if (testResult?.data?.deerConnections[0].pageInfo.hasNextPage) {
-      const lastEdge = testResult.data.deerConnections[0].edges[testResult.data.deerConnections[0].edges.length - 1];
-      setAfter(lastEdge?.node.id || null);
+    if (pageInfo?.hasNextPage) {
+      const lastEdge = items[items.length - 1];
+      setAfter(lastEdge.id || null);
       setBefore(null);
       setDirection("forward");
       setCurrentPage(currentPage + 1);
@@ -52,17 +52,17 @@ export default function Page(){
   };
 
   const handlePrevious = () => {
-    if (testResult?.data?.deerConnections[0].pageInfo.hasPreviousPage) {
-      const firstEdge = testResult.data.deerConnections[0].edges[0];
-      setBefore(firstEdge?.node.id || null);
+    if (pageInfo?.hasPreviousPage) {
+      const firstEdge = items[0];
+      setBefore(firstEdge.id || null);
       setAfter(null);
       setDirection("backward");
       setCurrentPage(currentPage - 1);
     }
   };
-  console.log(testResult);
   const { data, fetching, error } = testResult;
   const dataToUse = seePending ? data?.deerPendingConnections : data?.deerConnections;
+  const pageInfo = fetching ? null : dataToUse.length > 0 ? dataToUse[0].pageInfo : null;
   const items = fetching ? [] : dataToUse.length > 0 ? dataToUse[0].edges.map((edge: any) => edge.node) : [];
   const totalPages = fetching ? 0 : dataToUse.length > 0 ? Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage) : 0;
   
