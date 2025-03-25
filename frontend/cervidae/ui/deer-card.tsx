@@ -2,6 +2,7 @@ import '@/app/globals.css';
 import DangerRating from './danger-rating';
 import Bloody from '@/public/bloody.png'
 import Link from 'next/link';
+import striptags from 'striptags';
 
 export default function DeerCard(deer: {deer: any}){
   return (
@@ -18,7 +19,7 @@ export default function DeerCard(deer: {deer: any}){
         </div>
         <DangerRating rating={deer.deer.dangerLevel}/>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">
-            {deer.deer.description}
+            {striptags(deer.deer.description)}
         </p>
     </Link>
   )

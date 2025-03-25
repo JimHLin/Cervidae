@@ -7,6 +7,7 @@ import CreateReview from "@/ui/create-review";
 import { AuthContext } from "@/ui/auth-provider";
 import { redirect } from "next/navigation";
 import { useAuth } from "@/ui/auth-provider";
+import DOMPurify from "dompurify";
 export default function DeerPage({ params }: { params: Promise<{ id: string }> }) {
     const [deerId, setDeerId] = useState<string | null>(null);
     const { isAuthenticated, login, logout, isAdmin, userId } = useAuth();
@@ -80,6 +81,19 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     }
     `;
 
+    const approveDeerMutation = gql`
+    mutation approveDeerMutation ($id: String!, $approve: Boolean!) {
+      approveDeer(id: $id, approve: $approve) {
+        id
+        name
+        description
+        imageUrl
+        killCount
+        status
+      }
+    }
+    `;
+
 
     const [result, reexecuteQuery] = useQuery({
         query: query,
@@ -94,6 +108,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     });
 
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
+    const [approveDeerResult, executeApproveDeerMutation] = useMutation(approveDeerMutation);
     const submit = async () => {
       if(commentValue.length > 0) {
         const test = await executeCreateCommentMutation({
@@ -132,7 +147,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             <img src={data?.deer.imageUrl ? data?.deer.imageUrl : "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp"} alt="Deer" onError={(e) => {
                 e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
             }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
-            <p>{data?.deer.description}</p>
+            <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data?.deer.description) }} />
             <p>Deer Kill Count: {data?.deer.killCount}</p>
             <div className="flex flex-row gap-4 w-full relative overflow-auto">
               {data?.deer.reviews.map((review: any) => (
@@ -146,6 +161,22 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
               hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100" onClick={() => setShowCreateReview(true)}>+</button>
             </div>
             }
+            {data?.deer.status == "Pending" && 
+              <div className="flex flex-col justify-center items-center gap-4">
+                <p className="text-red-500">This deer is pending approval</p>
+                <div className="flex flex-row gap-4">
+                  <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={async () => {
+                    await executeApproveDeerMutation({ id: deerId, approve: true });
+                    reexecuteQuery({ requestPolicy: 'network-only' });
+                  }}>Approve</button>
+                  <button className="bg-red-500 text-white px-4 py-2 rounded-md" onClick={async () => {
+                    await executeApproveDeerMutation({ id: deerId, approve: false });
+                    reexecuteQuery({ requestPolicy: 'network-only' });
+                  }}>Reject</button>
+                </div>
+              </div>
+            }
+            {data?.deer.status == "Approved" && 
             <div className="flex flex-col gap-4 w-full">
               <h2 className="text-2xl font-bold">Comments</h2>
               {isAuthenticated ? (
@@ -166,6 +197,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
                   ))}
               </div>
             </div>
+            }
         </div>
     );
 }
