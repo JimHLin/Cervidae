@@ -164,13 +164,45 @@ pub enum DeerEntryStatus {
     Rejected,
 }
 
-impl Clone for DeerEntryStatus {
+impl DeerEntryStatus {
     fn clone(&self) -> Self {
         match self {
             DeerEntryStatus::Pending => DeerEntryStatus::Pending,
             DeerEntryStatus::Approved => DeerEntryStatus::Approved,
             DeerEntryStatus::Rejected => DeerEntryStatus::Rejected,
         }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            DeerEntryStatus::Pending => "Pending".to_string(),
+            DeerEntryStatus::Approved => "Approved".to_string(),
+            DeerEntryStatus::Rejected => "Rejected".to_string(),
+        }
+    }
+
+    fn from_str(value: &str) -> Result<Self> {
+        match value {
+            "Pending" => Ok(DeerEntryStatus::Pending),
+            "Approved" => Ok(DeerEntryStatus::Approved),
+            "Rejected" => Ok(DeerEntryStatus::Rejected),
+            _ => Err(Error::new("Invalid deer entry status")),
+        }
+    }
+}
+
+#[Scalar]
+impl ScalarType for DeerEntryStatus {
+    fn parse(value: Value) -> InputValueResult<Self> {
+        if let Value::String(value) = &value {
+            Ok(DeerEntryStatus::from_str(value).unwrap())
+        } else {
+            Err(InputValueError::expected_type(value))
+        }
+    }
+
+    fn to_value(&self) -> Value {
+        Value::String(self.to_string())
     }
 }
 
@@ -233,6 +265,10 @@ impl Deer {
 
     pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
         self.updated_at.map(NaiveDateTimeScalar::from)
+    }
+
+    pub async fn status(&self) -> DeerEntryStatus {
+        self.status.clone()
     }
 
     pub async fn created_by(&self, context: &Context<'_>) -> Result<User> {

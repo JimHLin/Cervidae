@@ -29,6 +29,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         description
         imageUrl
         killCount
+        status
         reviews{
           dangerLevel
           title
