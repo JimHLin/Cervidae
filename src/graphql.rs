@@ -322,9 +322,20 @@ impl MutationRoot {
         Ok(user)
     }
 
-    async fn approve_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Deer> {
+    async fn approve_deer(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+        approve: bool,
+    ) -> Result<Deer> {
         let id: Uuid = id.into();
-        let deer = query_as("UPDATE Cervidae SET status = 'Approved' WHERE id = $1 RETURNING *")
+        let status = if approve {
+            DeerEntryStatus::Approved
+        } else {
+            DeerEntryStatus::Rejected
+        };
+        let deer = query_as("UPDATE Cervidae SET status = $1 WHERE id = $2 RETURNING *")
+            .bind(&status)
             .bind(id)
             .fetch_one(context.data_unchecked::<PgPool>())
             .await?;
