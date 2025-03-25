@@ -32,7 +32,7 @@ async fn deer_page(
     before: Option<UuidScalar>,
     first: Option<i64>,
     last: Option<i64>,
-    approved: bool,
+    status: DeerEntryStatus,
 ) -> Result<Vec<DeerConnection>> {
     if first.is_some() && last.is_some() {
         return Err(async_graphql::Error::new(
@@ -50,13 +50,13 @@ async fn deer_page(
             let after: Uuid = after.unwrap().into();
             query_builder.push("Cervidae WHERE id > ");
             query_builder.push_bind(after);
-            query_builder.push(" AND approved = ");
-            query_builder.push_bind(approved);
+            query_builder.push(" AND status = ");
+            query_builder.push_bind(&status);
             query_builder.push(" ORDER BY id ASC LIMIT ");
             query_builder.push_bind(first.unwrap());
         } else {
-            query_builder.push("Cervidae WHERE approved = ");
-            query_builder.push_bind(approved);
+            query_builder.push("Cervidae WHERE status = ");
+            query_builder.push_bind(&status);
             query_builder.push(" ORDER BY id ASC LIMIT ");
             query_builder.push_bind(first.unwrap());
         }
@@ -65,14 +65,14 @@ async fn deer_page(
             let before: Uuid = before.into();
             query_builder.push("(SELECT * FROM Cervidae WHERE id < ");
             query_builder.push_bind(before);
-            query_builder.push(" AND approved = ");
-            query_builder.push_bind(approved);
+            query_builder.push(" AND status = ");
+            query_builder.push_bind(&status);
             query_builder.push(" ORDER BY id DESC LIMIT ");
             query_builder.push_bind(last.unwrap());
             query_builder.push(") AS deer ORDER BY id ASC");
         } else {
-            query_builder.push("(SELECT * FROM Cervidae WHERE approved = ");
-            query_builder.push_bind(approved);
+            query_builder.push("(SELECT * FROM Cervidae WHERE status = ");
+            query_builder.push_bind(&status);
             query_builder.push(" ORDER BY id DESC LIMIT ");
             query_builder.push_bind(last.unwrap());
             query_builder.push(") AS deer");
@@ -81,7 +81,6 @@ async fn deer_page(
     } else {
         return Err(async_graphql::Error::new("Invalid pagination arguments"));
     }
-    println!("{}", query_builder.sql());
     let deer: Vec<Deer> = query_builder
         .build_query_as()
         .fetch_all(context.data_unchecked::<PgPool>())
@@ -91,16 +90,14 @@ async fn deer_page(
     }
     let start_cursor = deer.first().unwrap().id;
     let end_cursor = deer.last().unwrap().id;
-    let page_test = query_as!(
-        PageInfo,
-        r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1 AND approved = $3) > 0) AS has_next_page, 
-        ((SELECT Count(*) FROM Cervidae WHERE id < $2 AND approved = $3) > 0) AS has_previous_page, 
+    let page_test: PageInfo = query_as(
+        r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1 AND status = $3) > 0) AS has_next_page, 
+        ((SELECT Count(*) FROM Cervidae WHERE id < $2 AND status = $3) > 0) AS has_previous_page, 
         $1 AS start_cursor, $2 AS end_cursor, 
-        COUNT(*) AS total_count FROM Cervidae WHERE approved = $3"#,
-        end_cursor,
-        start_cursor,
-        approved
-    )
+        COUNT(*) AS total_count FROM Cervidae WHERE status = $3"#,
+    ).bind(end_cursor)
+    .bind(start_cursor)
+    .bind(&status)
     .fetch_one(context.data_unchecked::<PgPool>())
     .await?;
     let deer_edges = deer
@@ -140,7 +137,8 @@ impl QueryRoot {
 
     async fn deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<Deer>> {
         let id: Uuid = id.into();
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id = $1", id)
+        let deer = query_as("SELECT * FROM Cervidae WHERE id = $1")
+            .bind(id)
             .fetch_optional(context.data_unchecked::<PgPool>())
             .await?;
 
@@ -148,7 +146,7 @@ impl QueryRoot {
     }
 
     async fn deer_all(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE approved = true")
+        let deer = query_as("SELECT * FROM Cervidae WHERE status = 'Approved'")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
 
@@ -156,7 +154,7 @@ impl QueryRoot {
     }
 
     async fn deer_pending(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE approved = false")
+        let deer = query_as("SELECT * FROM Cervidae WHERE status = 'Pending'")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
 
@@ -216,7 +214,8 @@ impl QueryRoot {
 
     async fn crime_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Deer>> {
         let id: Uuid = id.into();
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id IN (SELECT cervidae_id FROM Crime_Cervidae WHERE crime_id = $1)", id)
+        let deer = query_as("SELECT * FROM Cervidae WHERE id IN (SELECT cervidae_id FROM Crime_Cervidae WHERE crime_id = $1)")
+            .bind(id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
         Ok(deer)
@@ -245,7 +244,15 @@ impl QueryRoot {
         first: Option<i64>,
         last: Option<i64>,
     ) -> Result<Vec<DeerConnection>> {
-        deer_page(context, after, before, first, last, true).await
+        deer_page(
+            context,
+            after,
+            before,
+            first,
+            last,
+            DeerEntryStatus::Approved,
+        )
+        .await
     }
 
     async fn deer_pending_connections(
@@ -256,7 +263,15 @@ impl QueryRoot {
         first: Option<i64>,
         last: Option<i64>,
     ) -> Result<Vec<DeerConnection>> {
-        deer_page(context, after, before, first, last, false).await
+        deer_page(
+            context,
+            after,
+            before,
+            first,
+            last,
+            DeerEntryStatus::Pending,
+        )
+        .await
     }
 }
 
@@ -309,13 +324,10 @@ impl MutationRoot {
 
     async fn approve_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Deer> {
         let id: Uuid = id.into();
-        let deer = query_as!(
-            Deer,
-            "UPDATE Cervidae SET approved = true WHERE id = $1 RETURNING *",
-            id
-        )
-        .fetch_one(context.data_unchecked::<PgPool>())
-        .await?;
+        let deer = query_as("UPDATE Cervidae SET status = 'Approved' WHERE id = $1 RETURNING *")
+            .bind(id)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
         Ok(deer)
     }
 
@@ -357,19 +369,18 @@ impl MutationRoot {
     async fn create_deer(&self, context: &Context<'_>, input: CreateDeerInput) -> Result<Deer> {
         let deer_id = uuid::Uuid::new_v4();
         let user_id: Uuid = input.user_id.into();
-        let deer = query_as!(
-            Deer,
+        let deer: Deer = query_as(
             r#"
             INSERT INTO Cervidae (id, name, description, image_url, kill_count, created_by, updated_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"#,
-            deer_id,
-            &input.name,
-            &input.description,
-            input.image_url,
-            input.kill_count,
-            user_id,
-            user_id,
         )
+        .bind(deer_id)
+        .bind(&input.name)
+        .bind(&input.description)
+        .bind(input.image_url)
+        .bind(input.kill_count)
+        .bind(user_id)
+        .bind(user_id)
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
         Ok(deer.into())

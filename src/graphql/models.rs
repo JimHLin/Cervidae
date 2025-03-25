@@ -156,6 +156,24 @@ pub struct LoginInput {
     pub password: String,
 }
 
+#[derive(sqlx::Type, Serialize, Deserialize)]
+#[sqlx(type_name = "Deer_Entry_Status")]
+pub enum DeerEntryStatus {
+    Pending,
+    Approved,
+    Rejected,
+}
+
+impl Clone for DeerEntryStatus {
+    fn clone(&self) -> Self {
+        match self {
+            DeerEntryStatus::Pending => DeerEntryStatus::Pending,
+            DeerEntryStatus::Approved => DeerEntryStatus::Approved,
+            DeerEntryStatus::Rejected => DeerEntryStatus::Rejected,
+        }
+    }
+}
+
 #[derive(Serialize, FromRow)]
 pub struct Deer {
     pub id: Uuid,
@@ -167,7 +185,7 @@ pub struct Deer {
     pub updated_at: Option<NaiveDateTime>,
     pub created_by: Uuid,
     pub updated_by: Uuid,
-    pub approved: bool,
+    pub status: DeerEntryStatus,
 }
 
 impl Clone for Deer {
@@ -182,7 +200,7 @@ impl Clone for Deer {
             updated_at: self.updated_at.clone(),
             created_by: self.created_by,
             updated_by: self.updated_by,
-            approved: self.approved,
+            status: self.status.clone(),
         }
     }
 }
