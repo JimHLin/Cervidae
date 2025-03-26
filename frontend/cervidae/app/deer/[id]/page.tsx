@@ -94,6 +94,18 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     }
     `;
 
+    const resubmitDeerMutation = gql`
+    mutation resubmitDeerMutation ($id: String!) {
+      resubmitDeer(id: $id) {
+        id
+        name
+        description
+        imageUrl
+        killCount
+        status
+      }
+    }
+    `
 
     const [result, reexecuteQuery] = useQuery({
         query: query,
@@ -109,6 +121,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
 
     const [createCommentResult, executeCreateCommentMutation] = useMutation(createCommentMutation);
     const [approveDeerResult, executeApproveDeerMutation] = useMutation(approveDeerMutation);
+    const [resubmitDeerResult, executeResubmitDeerMutation] = useMutation(resubmitDeerMutation);
     const submit = async () => {
       if(commentValue.length > 0) {
         const test = await executeCreateCommentMutation({
@@ -122,6 +135,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
         }
       }
     }
+
 
     const [parentComment, setParentComment] = useState<string|null>(null);
 
@@ -141,6 +155,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
     if (error) return <p>Oh no... {error.message}</p>;
     const { data: commentsData, fetching: commentsFetching, error: commentsError } = commentsResult;
     return (
+      data?.deer.status !='Approved' && !isAdmin ? <div>Not authorized</div> :
         <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
           <CreateReview show={showCreateReview} setShow={setShowCreateReview} deerId={deerId} review={review} setReview={setReview}/>
             <h1>{data?.deer.name}</h1>
@@ -155,7 +170,7 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
                  editReview={populateReviewForm}/>
               ))}
             </div>
-            {isAuthenticated && !data?.deer.reviews.find((review: any) => review.user.id == userId) &&
+            {isAuthenticated && data?.deer.status == "Approved" && !data?.deer.reviews.find((review: any) => review.user.id == userId) &&
             <div className="w-full relative">
               <button className="z-10 bg-green-500 bg-opacity-50 text-opacity-50 text-white px-4 py-2 rounded-full absolute bottom-10 right-1
               hover:bg-green-500 hover:text-white hover:bg-opacity-100 hover:text-opacity-100" onClick={() => setShowCreateReview(true)}>+</button>
@@ -164,16 +179,18 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
             {data?.deer.status == "Pending" && 
               <div className="flex flex-col justify-center items-center gap-4">
                 <p className="text-red-500">This deer is pending approval</p>
-                <div className="flex flex-row gap-4">
-                  <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={async () => {
-                    await executeApproveDeerMutation({ id: deerId, approve: true });
-                    reexecuteQuery({ requestPolicy: 'network-only' });
-                  }}>Approve</button>
-                  <button className="bg-red-500 text-white px-4 py-2 rounded-md" onClick={async () => {
-                    await executeApproveDeerMutation({ id: deerId, approve: false });
-                    reexecuteQuery({ requestPolicy: 'network-only' });
-                  }}>Reject</button>
-                </div>
+                {isAdmin &&
+                  <div className="flex flex-row gap-4">
+                    <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={async () => {
+                      await executeApproveDeerMutation({ id: deerId, approve: true });
+                      reexecuteQuery({ requestPolicy: 'network-only' });
+                    }}>Approve</button>
+                    <button className="bg-red-500 text-white px-4 py-2 rounded-md" onClick={async () => {
+                      await executeApproveDeerMutation({ id: deerId, approve: false });
+                      reexecuteQuery({ requestPolicy: 'network-only' });
+                    }}>Reject</button>
+                  </div>
+                }
               </div>
             }
             {data?.deer.status == "Approved" && 
@@ -197,6 +214,12 @@ export default function DeerPage({ params }: { params: Promise<{ id: string }> }
                   ))}
               </div>
             </div>
+            }
+            {data?.deer.status == "Rejected" &&
+              <button onClick={async () => {
+                await executeResubmitDeerMutation({ id: deerId});
+                reexecuteQuery({ requestPolicy: 'network-only' });
+              }}>Resubmit</button>
             }
         </div>
     );
