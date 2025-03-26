@@ -6,12 +6,18 @@ import { useState, useCallback } from "react";
 import Switch from "@/ui/switch";
 import Link from "next/link";
 export default function Page(){
+  enum status{
+    Approved,
+    Pending,
+    Rejected
+  }
   const entriesPerPage = 2;
-  const { isAuthenticated, isAdmin } = useAuth();
-  const [seePending, setSeePending] = useState(false);
+  const { isAuthenticated, isAdmin, userId } = useAuth();
+  const [seeStatus, setSeeStatus] = useState(status.Approved);
   const testQuery = gql`
-    query ($first: Int, $after: String, $last: Int, $before: String) {
-        ${seePending ? "deerPendingConnections" : "deerConnections"}(first: $first, after: $after, last: $last, before: $before) {
+    query ($first: Int, $after: String, $last: Int, $before: String${seeStatus == status.Rejected? ", $id: UuidScalar" : ""}) {
+        ${seeStatus == status.Approved ? "deerConnections" : seeStatus == status.Pending ? "deerPendingConnections" : "deerRejectedConnections"}
+        (first: $first, after: $after, last: $last, before: $before${seeStatus == status.Rejected? ", id: $id" : ""}) {
           edges{
             node{
               id
@@ -29,7 +35,14 @@ export default function Page(){
         }
       }
     `;
-
+  const rejectedQuery = gql`
+  query($userId: UuidScalar!){
+  deerRejectedConnections(id: $userId, first: 1){
+    pageInfo{
+      totalCount
+    }
+  }
+}`;
   const [after, setAfter] = useState<string | null>(null);
   const [before, setBefore] = useState<string | null>(null);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
@@ -40,6 +53,10 @@ export default function Page(){
       ? { first: entriesPerPage, after }
       : { last: entriesPerPage, before },
   });
+  const [rejectedResult, setRejectedResult] = useQuery({
+    query: rejectedQuery,
+    variables: {userId: userId}
+  })
 
   const handleNext = () => {
     if (pageInfo?.hasNextPage) {
@@ -61,21 +78,29 @@ export default function Page(){
     }
   };
   const { data, fetching, error } = testResult;
-  const dataToUse = error? [] : seePending ? data?.deerPendingConnections : data?.deerConnections;
+
+  const dataToUse = error ? [] : 
+  seeStatus == status.Pending ? data?.deerPendingConnections : seeStatus == status.Rejected ? data?.deerRejectedConnections : data?.deerConnections;
   const pageInfo = fetching ? null : dataToUse.length > 0 ? dataToUse[0].pageInfo : null;
   const items = fetching ? [] : dataToUse.length > 0 ? dataToUse[0].edges.map((edge: any) => edge.node) : [];
   const totalPages = fetching ? 0 : dataToUse.length > 0 ? Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage) : 0;
-  
   /*if (fetching) return <p>Loading...</p>;*/
   return (
     <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
       {isAdmin && (
         <div className="flex flex-row justify-center items-center gap-4">
           <Link href="/deer/create">Create Deer</Link>
-          <Switch onChange={setSeePending} value={seePending} />
+          <Switch onChange={(val: boolean) =>setSeeStatus(val?status.Pending:status.Approved)} value={seeStatus == status.Pending} />
         </div>
       )}
       <p className="text-xl text-gray-500">Terrifying creatures stalk these lands</p>
+      {
+        rejectedResult?.data?.deerRejectedConnections?.length > 0 &&
+        seeStatus == status.Rejected ? 
+        <button onClick={() => setSeeStatus(status.Approved)}>Go back to approved</button>
+        :
+        <button onClick={() => setSeeStatus(status.Rejected)}>View {rejectedResult?.data?.deerRejected?.length} rejected deer entries</button>
+      }
       <div className="flex flex-row gap-4 flex-wrap justify-evenly align-bottom transition-all duration-500">
         {items.map((deer: any) => (
           <DeerCard deer={deer} key={deer.id} />
