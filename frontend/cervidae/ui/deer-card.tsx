@@ -2,12 +2,13 @@ import '@/app/globals.css';
 import DangerRating from './danger-rating';
 import Bloody from '@/public/bloody.png'
 import Link from 'next/link';
+import striptags from 'striptags';
 
 export default function DeerCard(deer: {deer: any}){
   return (
     <Link href={`/deer/${deer.deer.id}`} className="flex flex-col justify-center align-middle p-2 dark:bg-gray-800 border-2 border-green-900  rounded-lg w-64 gap-1">
         <div className="flex flex-row justify-center items-center">
-            <img src={deer.deer.imageUrl} alt="Deer" onError={(e) => {
+            <img src={deer.deer.imageUrl ? deer.deer.imageUrl : "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp"} alt="Deer" onError={(e) => {
                 e.currentTarget.src = "https://i.postimg.cc/L69Q7Xzf/defaultdeer.webp";
             }} width="auto" height="auto" className="w-full h-40 object-scale-down bg-green-900" />
         </div>
@@ -18,7 +19,7 @@ export default function DeerCard(deer: {deer: any}){
         </div>
         <DangerRating rating={deer.deer.dangerLevel}/>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">
-            Deer Description that is very long and takes up a lot of space. There is even more text that will never end, followed by even more text that will never ever end.
+            {striptags(deer.deer.description)}
         </p>
     </Link>
   )

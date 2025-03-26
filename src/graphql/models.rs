@@ -156,6 +156,56 @@ pub struct LoginInput {
     pub password: String,
 }
 
+#[derive(sqlx::Type, Serialize, Deserialize)]
+#[sqlx(type_name = "Deer_Entry_Status")]
+pub enum DeerEntryStatus {
+    Pending,
+    Approved,
+    Rejected,
+}
+
+impl DeerEntryStatus {
+    fn clone(&self) -> Self {
+        match self {
+            DeerEntryStatus::Pending => DeerEntryStatus::Pending,
+            DeerEntryStatus::Approved => DeerEntryStatus::Approved,
+            DeerEntryStatus::Rejected => DeerEntryStatus::Rejected,
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            DeerEntryStatus::Pending => "Pending".to_string(),
+            DeerEntryStatus::Approved => "Approved".to_string(),
+            DeerEntryStatus::Rejected => "Rejected".to_string(),
+        }
+    }
+
+    fn from_str(value: &str) -> Result<Self> {
+        match value {
+            "Pending" => Ok(DeerEntryStatus::Pending),
+            "Approved" => Ok(DeerEntryStatus::Approved),
+            "Rejected" => Ok(DeerEntryStatus::Rejected),
+            _ => Err(Error::new("Invalid deer entry status")),
+        }
+    }
+}
+
+#[Scalar]
+impl ScalarType for DeerEntryStatus {
+    fn parse(value: Value) -> InputValueResult<Self> {
+        if let Value::String(value) = &value {
+            Ok(DeerEntryStatus::from_str(value).unwrap())
+        } else {
+            Err(InputValueError::expected_type(value))
+        }
+    }
+
+    fn to_value(&self) -> Value {
+        Value::String(self.to_string())
+    }
+}
+
 #[derive(Serialize, FromRow)]
 pub struct Deer {
     pub id: Uuid,
@@ -167,6 +217,24 @@ pub struct Deer {
     pub updated_at: Option<NaiveDateTime>,
     pub created_by: Uuid,
     pub updated_by: Uuid,
+    pub status: DeerEntryStatus,
+}
+
+impl Clone for Deer {
+    fn clone(&self) -> Self {
+        Deer {
+            id: self.id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            image_url: self.image_url.clone(),
+            kill_count: self.kill_count,
+            created_at: self.created_at.clone(),
+            updated_at: self.updated_at.clone(),
+            created_by: self.created_by,
+            updated_by: self.updated_by,
+            status: self.status.clone(),
+        }
+    }
 }
 
 #[Object]
@@ -197,6 +265,10 @@ impl Deer {
 
     pub async fn updated_at(&self) -> Option<NaiveDateTimeScalar> {
         self.updated_at.map(NaiveDateTimeScalar::from)
+    }
+
+    pub async fn status(&self) -> DeerEntryStatus {
+        self.status.clone()
     }
 
     pub async fn created_by(&self, context: &Context<'_>) -> Result<User> {
@@ -511,4 +583,48 @@ pub struct Claims {
     pub exp: usize,
     pub iat: usize,
     pub iss: String,
+}
+
+#[derive(Serialize, SimpleObject)]
+pub struct DeerEdge {
+    pub node: Deer,
+    pub cursor: String,
+}
+
+#[derive(Serialize, SimpleObject)]
+pub struct DeerConnection {
+    pub edges: Vec<DeerEdge>,
+    pub page_info: PageInfo,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct PageInfo {
+    pub has_next_page: Option<bool>,
+    pub has_previous_page: Option<bool>,
+    pub start_cursor: Option<Uuid>,
+    pub end_cursor: Option<Uuid>,
+    pub total_count: Option<i64>,
+}
+
+#[Object]
+impl PageInfo {
+    pub async fn has_next_page(&self) -> Option<bool> {
+        self.has_next_page
+    }
+
+    pub async fn has_previous_page(&self) -> Option<bool> {
+        self.has_previous_page
+    }
+
+    pub async fn start_cursor(&self) -> Option<UuidScalar> {
+        self.start_cursor.map(UuidScalar::from)
+    }
+
+    pub async fn end_cursor(&self) -> Option<UuidScalar> {
+        self.end_cursor.map(UuidScalar::from)
+    }
+
+    pub async fn total_count(&self) -> Option<i64> {
+        self.total_count
+    }
 }

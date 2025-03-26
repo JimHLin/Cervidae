@@ -1,8 +1,9 @@
 'use client'
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useMutation, gql } from 'urql';
 import { useAuth } from '@/ui/auth-provider';
 import { redirect } from 'next/navigation';
+import PasswordInput from '@/ui/password-input';
 
 const loginString = gql`
     mutation Login($input: LoginInput!) {
@@ -13,6 +14,7 @@ const loginString = gql`
 export default function LoginPage(){
     const [loginResult, executeLogin] = useMutation(loginString);
     const { isAuthenticated, login, logout, validate } = useAuth(); 
+    const [password, setPassword] = useState('');
     if(isAuthenticated){
         redirect('/');
     }
@@ -20,7 +22,6 @@ export default function LoginPage(){
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const email = formData.get('email');
-        const password = formData.get('password');  
         const loginInput = {
             email: email as string,
             password: password as string
@@ -42,7 +43,7 @@ export default function LoginPage(){
                         <label htmlFor="email">Email</label>
                         <input type="text" placeholder="Email" autoComplete='on' className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2" name="email"/>
                         <label htmlFor="password">Password</label>
-                        <input type="password" placeholder="Password" autoComplete='off' className="border-2 dark:border-gray-300 dark:bg-gray-900 rounded-md p-2" name="password"/>
+                        <PasswordInput value={password} onChange={(value) => setPassword(value)} />
                     </div>
                     <button type="submit">Login</button>
                 </form>

@@ -13,7 +13,8 @@ pub async fn get_user(context: &Context<'_>, id: Uuid) -> Result<Option<User>> {
 }
 
 pub async fn get_deer(context: &Context<'_>, id: Uuid) -> Result<Option<Deer>> {
-    let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id = $1", id)
+    let deer: Option<Deer> = query_as("SELECT * FROM Cervidae WHERE id = $1")
+        .bind(id)
         .fetch_optional(context.data_unchecked::<PgPool>())
         .await
         .map_err(|e| e.to_string())?;

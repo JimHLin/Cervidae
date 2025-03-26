@@ -26,6 +26,109 @@ fn add_to_query<'b, 'a, T>(
     query_builder.push_bind(value);
 }
 
+async fn deer_page(
+    context: &Context<'_>,
+    after: Option<Uuid>,
+    before: Option<Uuid>,
+    first: Option<i64>,
+    last: Option<i64>,
+    status: DeerEntryStatus,
+    created_by: Option<Uuid>
+) -> Result<Vec<DeerConnection>> {
+    if first.is_some() && last.is_some() {
+        return Err(async_graphql::Error::new(
+            "Invalid arguments: please specify only one of first or last",
+        ));
+    }
+    if (first.is_some() && first.unwrap() == 0) || (last.is_some() && last.unwrap() == 0) {
+        return Err(async_graphql::Error::new(
+            "Invalid arguments: first and last cannot be 0",
+        ));
+    }
+    let mut query_builder: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM ");
+    if first.is_some() {
+        query_builder.push("Cervidae WHERE status = ");
+        query_builder.push_bind(&status);
+        if after.is_some() {
+            query_builder.push(" AND id > ");
+            query_builder.push_bind(after);
+        }
+        if created_by.is_some() {
+            query_builder.push(" AND created_by = ");
+            query_builder.push_bind(created_by);
+        }
+        query_builder.push(" ORDER BY id ASC LIMIT ");
+        query_builder.push_bind(first.unwrap());
+
+    } else if last.is_some() {
+        query_builder.push("(SELECT * FROM Cervidae WHERE status = ");
+        query_builder.push_bind(&status);
+        if last.is_some() {
+            query_builder.push(" AND id < ");
+            query_builder.push_bind(before);
+        }
+        if created_by.is_some() {
+            query_builder.push(" AND created_by = ");
+            query_builder.push_bind(created_by);
+        }
+        query_builder.push(" ORDER BY id DESC LIMIT ");
+        query_builder.push_bind(last.unwrap());
+        query_builder.push(") AS deer ORDER BY id ASC");
+    } else {
+        return Err(async_graphql::Error::new("Invalid pagination arguments"));
+    }
+    let deer: Vec<Deer> = query_builder
+        .build_query_as()
+        .fetch_all(context.data_unchecked::<PgPool>())
+        .await?;
+    if deer.is_empty() {
+        return Err(async_graphql::Error::new("No deer found"));
+    }
+    let start_cursor = deer.first().unwrap().id;
+    let end_cursor = deer.last().unwrap().id;
+    let mut has_next_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id > $1 AND status = $3");
+    let mut has_previous_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id < $2 AND status = $3");
+
+    if created_by.is_some() {
+        has_next_page_query.push_str(" AND created_by = $4");
+        has_previous_page_query.push_str(" AND created_by = $4");
+    }
+
+    let query = format!(
+        r#"SELECT 
+            (({}) > 0) AS has_next_page,
+            (({}) > 0) AS has_previous_page,
+            $1 AS start_cursor, 
+            $2 AS end_cursor, 
+            COUNT(*) AS total_count 
+        FROM Cervidae 
+        WHERE status = $3"#,
+        has_next_page_query, has_previous_page_query
+    );
+
+    let mut query = sqlx::query_as::<_, PageInfo>(&query)
+        .bind(end_cursor)
+        .bind(start_cursor)
+        .bind(status);
+
+    if let Some(id) = created_by {
+        query = query.bind(id);
+    }
+    let page_test = query.fetch_one(context.data_unchecked::<PgPool>()).await?;
+    let deer_edges = deer
+        .iter()
+        .map(|deer: &Deer| DeerEdge {
+            node: deer.clone(),
+            cursor: deer.id.to_string(),
+        })
+        .collect();
+    let deer_connection = DeerConnection {
+        edges: deer_edges,
+        page_info: page_test,
+    };
+    Ok(vec![deer_connection])
+}
+
 #[Object]
 impl QueryRoot {
     // Add your query resolvers here
@@ -49,7 +152,8 @@ impl QueryRoot {
 
     async fn deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Option<Deer>> {
         let id: Uuid = id.into();
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id = $1", id)
+        let deer = query_as("SELECT * FROM Cervidae WHERE id = $1")
+            .bind(id)
             .fetch_optional(context.data_unchecked::<PgPool>())
             .await?;
 
@@ -57,7 +161,15 @@ impl QueryRoot {
     }
 
     async fn deer_all(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae")
+        let deer = query_as("SELECT * FROM Cervidae WHERE status = 'Approved'")
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+
+        Ok(deer)
+    }
+
+    async fn deer_pending(&self, context: &Context<'_>) -> Result<Vec<Deer>> {
+        let deer = query_as("SELECT * FROM Cervidae WHERE status = 'Pending'")
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
 
@@ -117,7 +229,8 @@ impl QueryRoot {
 
     async fn crime_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Deer>> {
         let id: Uuid = id.into();
-        let deer = query_as!(Deer, "SELECT * FROM Cervidae WHERE id IN (SELECT cervidae_id FROM Crime_Cervidae WHERE crime_id = $1)", id)
+        let deer = query_as("SELECT * FROM Cervidae WHERE id IN (SELECT cervidae_id FROM Crime_Cervidae WHERE crime_id = $1)")
+            .bind(id)
             .fetch_all(context.data_unchecked::<PgPool>())
             .await?;
         Ok(deer)
@@ -136,6 +249,73 @@ impl QueryRoot {
         } else {
             Err(async_graphql::Error::new("No token found"))
         }
+    }
+
+    async fn deer_connections(
+        &self,
+        context: &Context<'_>,
+        after: Option<UuidScalar>,
+        before: Option<UuidScalar>,
+        first: Option<i64>,
+        last: Option<i64>,
+    ) -> Result<Vec<DeerConnection>> {
+        let after = after.map(|x|x.into());
+        let before = before.map(|x|x.into());
+        deer_page(
+            context,
+            after,
+            before,
+            first,
+            last,
+            DeerEntryStatus::Approved,
+            None
+        )
+        .await
+    }
+
+    async fn deer_pending_connections(
+        &self,
+        context: &Context<'_>,
+        after: Option<UuidScalar>,
+        before: Option<UuidScalar>,
+        first: Option<i64>,
+        last: Option<i64>,
+    ) -> Result<Vec<DeerConnection>> {
+        let after = after.map(|x|x.into());
+        let before = before.map(|x|x.into());
+        deer_page(
+            context,
+            after,
+            before,
+            first,
+            last,
+            DeerEntryStatus::Pending,
+            None
+        )
+        .await
+    }
+    async fn deer_rejected_connections(
+        &self,
+        context: &Context<'_>,
+        after: Option<UuidScalar>,
+        before: Option<UuidScalar>,
+        first: Option<i64>,
+        last: Option<i64>,
+        id: Option<UuidScalar>
+    ) -> Result<Vec<DeerConnection>> {
+        let after = after.map(|x|x.into());
+        let before = before.map(|x|x.into());
+        let id: Option<Uuid> = id.map(|x|x.into());
+        deer_page(
+            context,
+            after,
+            before,
+            first,
+            last,
+            DeerEntryStatus::Rejected,
+            id
+        )
+        .await
     }
 }
 
@@ -186,6 +366,40 @@ impl MutationRoot {
         Ok(user)
     }
 
+    async fn approve_deer(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+        approve: bool,
+    ) -> Result<Deer> {
+        let id: Uuid = id.into();
+        let status = if approve {
+            DeerEntryStatus::Approved
+        } else {
+            DeerEntryStatus::Rejected
+        };
+        let deer = query_as("UPDATE Cervidae SET status = $1 WHERE id = $2 RETURNING *")
+            .bind(&status)
+            .bind(id)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(deer)
+    }
+
+    async fn resubmit_deer(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+    ) -> Result<Deer> {
+        let id: Uuid = id.into();
+        let deer = query_as("UPDATE Cervidae SET status = $1 WHERE id = $2 RETURNING *")
+            .bind(DeerEntryStatus::Pending)
+            .bind(id)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(deer)
+    }
+
     async fn reset_user_password(
         &self,
         context: &Context<'_>,
@@ -224,19 +438,18 @@ impl MutationRoot {
     async fn create_deer(&self, context: &Context<'_>, input: CreateDeerInput) -> Result<Deer> {
         let deer_id = uuid::Uuid::new_v4();
         let user_id: Uuid = input.user_id.into();
-        let deer = query_as!(
-            Deer,
+        let deer: Deer = query_as(
             r#"
             INSERT INTO Cervidae (id, name, description, image_url, kill_count, created_by, updated_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"#,
-            deer_id,
-            &input.name,
-            &input.description,
-            input.image_url,
-            input.kill_count,
-            user_id,
-            user_id,
         )
+        .bind(deer_id)
+        .bind(&input.name)
+        .bind(&input.description)
+        .bind(input.image_url)
+        .bind(input.kill_count)
+        .bind(user_id)
+        .bind(user_id)
         .fetch_one(context.data_unchecked::<PgPool>())
         .await?;
         Ok(deer.into())
