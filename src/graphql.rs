@@ -28,11 +28,12 @@ fn add_to_query<'b, 'a, T>(
 
 async fn deer_page(
     context: &Context<'_>,
-    after: Option<UuidScalar>,
-    before: Option<UuidScalar>,
+    after: Option<Uuid>,
+    before: Option<Uuid>,
     first: Option<i64>,
     last: Option<i64>,
     status: DeerEntryStatus,
+    created_by: Option<Uuid>
 ) -> Result<Vec<DeerConnection>> {
     if first.is_some() && last.is_some() {
         return Err(async_graphql::Error::new(
@@ -46,38 +47,33 @@ async fn deer_page(
     }
     let mut query_builder: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM ");
     if first.is_some() {
+        query_builder.push("Cervidae WHERE status = ");
+        query_builder.push_bind(&status);
         if after.is_some() {
-            let after: Uuid = after.unwrap().into();
-            query_builder.push("Cervidae WHERE id > ");
+            query_builder.push(" AND id > ");
             query_builder.push_bind(after);
-            query_builder.push(" AND status = ");
-            query_builder.push_bind(&status);
-            query_builder.push(" ORDER BY id ASC LIMIT ");
-            query_builder.push_bind(first.unwrap());
-        } else {
-            query_builder.push("Cervidae WHERE status = ");
-            query_builder.push_bind(&status);
-            query_builder.push(" ORDER BY id ASC LIMIT ");
-            query_builder.push_bind(first.unwrap());
         }
+        if created_by.is_some() {
+            query_builder.push(" AND created_by = ");
+            query_builder.push_bind(created_by);
+        }
+        query_builder.push(" ORDER BY id ASC LIMIT ");
+        query_builder.push_bind(first.unwrap());
+
     } else if last.is_some() {
-        if let Some(before) = before {
-            let before: Uuid = before.into();
-            query_builder.push("(SELECT * FROM Cervidae WHERE id < ");
+        query_builder.push("(SELECT * FROM Cervidae WHERE status = ");
+        query_builder.push_bind(&status);
+        if last.is_some() {
+            query_builder.push(" AND id < ");
             query_builder.push_bind(before);
-            query_builder.push(" AND status = ");
-            query_builder.push_bind(&status);
-            query_builder.push(" ORDER BY id DESC LIMIT ");
-            query_builder.push_bind(last.unwrap());
-            query_builder.push(") AS deer ORDER BY id ASC");
-        } else {
-            query_builder.push("(SELECT * FROM Cervidae WHERE status = ");
-            query_builder.push_bind(&status);
-            query_builder.push(" ORDER BY id DESC LIMIT ");
-            query_builder.push_bind(last.unwrap());
-            query_builder.push(") AS deer");
-            query_builder.push(" ORDER BY id ASC");
         }
+        if created_by.is_some() {
+            query_builder.push(" AND created_by = ");
+            query_builder.push_bind(created_by);
+        }
+        query_builder.push(" ORDER BY id DESC LIMIT ");
+        query_builder.push_bind(last.unwrap());
+        query_builder.push(") AS deer ORDER BY id ASC");
     } else {
         return Err(async_graphql::Error::new("Invalid pagination arguments"));
     }
@@ -90,16 +86,35 @@ async fn deer_page(
     }
     let start_cursor = deer.first().unwrap().id;
     let end_cursor = deer.last().unwrap().id;
-    let page_test: PageInfo = query_as(
-        r#"SELECT ((SELECT Count(*) FROM Cervidae WHERE id > $1 AND status = $3) > 0) AS has_next_page, 
-        ((SELECT Count(*) FROM Cervidae WHERE id < $2 AND status = $3) > 0) AS has_previous_page, 
-        $1 AS start_cursor, $2 AS end_cursor, 
-        COUNT(*) AS total_count FROM Cervidae WHERE status = $3"#,
-    ).bind(end_cursor)
-    .bind(start_cursor)
-    .bind(&status)
-    .fetch_one(context.data_unchecked::<PgPool>())
-    .await?;
+    let mut has_next_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id > $1 AND status = $3");
+    let mut has_previous_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id < $2 AND status = $3");
+
+    if created_by.is_some() {
+        has_next_page_query.push_str(" AND another_column = $4");
+        has_previous_page_query.push_str(" AND another_column = $4");
+    }
+
+    let query = format!(
+        r#"SELECT 
+            (({}) > 0) AS has_next_page,
+            (({}) > 0) AS has_previous_page,
+            $1 AS start_cursor, 
+            $2 AS end_cursor, 
+            COUNT(*) AS total_count 
+        FROM Cervidae 
+        WHERE status = $3"#,
+        has_next_page_query, has_previous_page_query
+    );
+
+    let mut query = sqlx::query_as::<_, PageInfo>(&query)
+        .bind(end_cursor)
+        .bind(start_cursor)
+        .bind(status);
+
+    if let Some(id) = created_by {
+        query = query.bind(id);
+    }
+    let page_test = query.fetch_one(context.data_unchecked::<PgPool>()).await?;
     let deer_edges = deer
         .iter()
         .map(|deer: &Deer| DeerEdge {
@@ -244,6 +259,8 @@ impl QueryRoot {
         first: Option<i64>,
         last: Option<i64>,
     ) -> Result<Vec<DeerConnection>> {
+        let after = after.map(|x|x.into());
+        let before = before.map(|x|x.into());
         deer_page(
             context,
             after,
@@ -251,6 +268,7 @@ impl QueryRoot {
             first,
             last,
             DeerEntryStatus::Approved,
+            None
         )
         .await
     }
@@ -263,6 +281,8 @@ impl QueryRoot {
         first: Option<i64>,
         last: Option<i64>,
     ) -> Result<Vec<DeerConnection>> {
+        let after = after.map(|x|x.into());
+        let before = before.map(|x|x.into());
         deer_page(
             context,
             after,
@@ -270,18 +290,32 @@ impl QueryRoot {
             first,
             last,
             DeerEntryStatus::Pending,
+            None
         )
         .await
     }
-
-    async fn deer_rejected(&self, context: &Context<'_>, id: UuidScalar) -> Result<Vec<Deer>> {
-        let id = Uuid::from(id);
-        let deer = query_as("SELECT * FROM Cervidae WHERE status = 'Rejected' AND created_by = $1")
-            .bind(id)
-            .fetch_all(context.data_unchecked::<PgPool>())
-            .await?;
-
-        Ok(deer)
+    async fn deer_rejected_connections(
+        &self,
+        context: &Context<'_>,
+        after: Option<UuidScalar>,
+        before: Option<UuidScalar>,
+        first: Option<i64>,
+        last: Option<i64>,
+        id: Option<UuidScalar>
+    ) -> Result<Vec<DeerConnection>> {
+        let after = after.map(|x|x.into());
+        let before = before.map(|x|x.into());
+        let id: Option<Uuid> = id.map(|x|x.into());
+        deer_page(
+            context,
+            after,
+            before,
+            first,
+            last,
+            DeerEntryStatus::Rejected,
+            id
+        )
+        .await
     }
 }
 
