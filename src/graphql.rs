@@ -386,6 +386,20 @@ impl MutationRoot {
         Ok(deer)
     }
 
+    async fn resubmit_deer(
+        &self,
+        context: &Context<'_>,
+        id: UuidScalar,
+    ) -> Result<Deer> {
+        let id: Uuid = id.into();
+        let deer = query_as("UPDATE Cervidae SET status = $1 WHERE id = $2 RETURNING *")
+            .bind(DeerEntryStatus::Pending)
+            .bind(id)
+            .fetch_one(context.data_unchecked::<PgPool>())
+            .await?;
+        Ok(deer)
+    }
+
     async fn reset_user_password(
         &self,
         context: &Context<'_>,
