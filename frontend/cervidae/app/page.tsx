@@ -77,6 +77,19 @@ export default function Page(){
       setCurrentPage(currentPage - 1);
     }
   };
+
+  const handleStatus = (s: number) => {
+    switch(s){
+      case 1: setSeeStatus(status.Pending); break;
+      case 2: setSeeStatus(status.Approved); break;
+      case 3: setSeeStatus(status.Rejected); break;
+      default: return;
+    }
+    setBefore(null);
+    setAfter(null);
+    setDirection("forward");
+    setCurrentPage(1);
+  }
   const { data, fetching, error } = testResult;
 
   const dataToUse = error ? [] : 
@@ -84,22 +97,23 @@ export default function Page(){
   const pageInfo = fetching ? null : dataToUse.length > 0 ? dataToUse[0].pageInfo : null;
   const items = fetching ? [] : dataToUse.length > 0 ? dataToUse[0].edges.map((edge: any) => edge.node) : [];
   const totalPages = fetching ? 0 : dataToUse.length > 0 ? Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage) : 0;
+  
   /*if (fetching) return <p>Loading...</p>;*/
   return (
     <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
       {isAdmin && (
         <div className="flex flex-row justify-center items-center gap-4">
           <Link href="/deer/create">Create Deer</Link>
-          <Switch onChange={(val: boolean) =>setSeeStatus(val?status.Pending:status.Approved)} value={seeStatus == status.Pending} />
+          <Switch onChange={(val: boolean) =>handleStatus(val?1:2)} value={seeStatus == status.Pending} />
         </div>
       )}
       <p className="text-xl text-gray-500">Terrifying creatures stalk these lands</p>
       {
         rejectedResult?.data?.deerRejectedConnections?.length > 0 &&
         seeStatus == status.Rejected ? 
-        <button onClick={() => setSeeStatus(status.Approved)}>Go back to approved</button>
+        <button onClick={() => handleStatus(2)}>Go back to approved</button>
         :
-        <button onClick={() => setSeeStatus(status.Rejected)}>View {rejectedResult?.data?.deerRejected?.length} rejected deer entries</button>
+        <button onClick={() => handleStatus(3)}>View {rejectedResult?.data?.deerRejected?.length} rejected deer entries</button>
       }
       <div className="flex flex-row gap-4 flex-wrap justify-evenly align-bottom transition-all duration-500">
         {items.map((deer: any) => (
