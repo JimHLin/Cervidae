@@ -90,8 +90,8 @@ async fn deer_page(
     let mut has_previous_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id < $2 AND status = $3");
 
     if created_by.is_some() {
-        has_next_page_query.push_str(" AND another_column = $4");
-        has_previous_page_query.push_str(" AND another_column = $4");
+        has_next_page_query.push_str(" AND created_by = $4");
+        has_previous_page_query.push_str(" AND created_by = $4");
     }
 
     let query = format!(
