@@ -273,6 +273,15 @@ impl QueryRoot {
         )
         .await
     }
+
+    async fn deer_rejected(&self, context: &Context<'_>. id: UuidScalar) -> Result<Vec<Deer>> {
+        let deer = query_as("SELECT * FROM Cervidae WHERE status = 'Rejected' AND created_by = $1")
+            .bind(id)
+            .fetch_all(context.data_unchecked::<PgPool>())
+            .await?;
+
+        Ok(deer)
+    }
 }
 
 pub struct MutationRoot;
