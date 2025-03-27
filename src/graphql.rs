@@ -1,4 +1,5 @@
 use async_graphql::{Context, Object, Result};
+use aws_sdk_s3::{presigning::PresigningConfig, Client};
 use bcrypt::{hash, verify};
 use chrono::Utc;
 use http::header::{HeaderValue, SET_COOKIE};
@@ -6,8 +7,10 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use models::*;
 use sqlx::{self, query, query_as, Encode, PgPool, Postgres, QueryBuilder, Type};
 use std::env;
+use std::time::Duration;
 use tower_cookies::Cookies;
 use uuid::Uuid;
+
 pub mod models;
 pub mod storage;
 // Root types for GraphQL schema
@@ -33,7 +36,7 @@ async fn deer_page(
     first: Option<i64>,
     last: Option<i64>,
     status: DeerEntryStatus,
-    created_by: Option<Uuid>
+    created_by: Option<Uuid>,
 ) -> Result<Vec<DeerConnection>> {
     if first.is_some() && last.is_some() {
         return Err(async_graphql::Error::new(
@@ -59,7 +62,6 @@ async fn deer_page(
         }
         query_builder.push(" ORDER BY id ASC LIMIT ");
         query_builder.push_bind(first.unwrap());
-
     } else if last.is_some() {
         query_builder.push("(SELECT * FROM Cervidae WHERE status = ");
         query_builder.push_bind(&status);
@@ -86,8 +88,10 @@ async fn deer_page(
     }
     let start_cursor = deer.first().unwrap().id;
     let end_cursor = deer.last().unwrap().id;
-    let mut has_next_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id > $1 AND status = $3");
-    let mut has_previous_page_query = String::from("SELECT COUNT(*) FROM Cervidae WHERE id < $2 AND status = $3");
+    let mut has_next_page_query =
+        String::from("SELECT COUNT(*) FROM Cervidae WHERE id > $1 AND status = $3");
+    let mut has_previous_page_query =
+        String::from("SELECT COUNT(*) FROM Cervidae WHERE id < $2 AND status = $3");
 
     if created_by.is_some() {
         has_next_page_query.push_str(" AND created_by = $4");
@@ -259,8 +263,8 @@ impl QueryRoot {
         first: Option<i64>,
         last: Option<i64>,
     ) -> Result<Vec<DeerConnection>> {
-        let after = after.map(|x|x.into());
-        let before = before.map(|x|x.into());
+        let after = after.map(|x| x.into());
+        let before = before.map(|x| x.into());
         deer_page(
             context,
             after,
@@ -268,7 +272,7 @@ impl QueryRoot {
             first,
             last,
             DeerEntryStatus::Approved,
-            None
+            None,
         )
         .await
     }
@@ -281,8 +285,8 @@ impl QueryRoot {
         first: Option<i64>,
         last: Option<i64>,
     ) -> Result<Vec<DeerConnection>> {
-        let after = after.map(|x|x.into());
-        let before = before.map(|x|x.into());
+        let after = after.map(|x| x.into());
+        let before = before.map(|x| x.into());
         deer_page(
             context,
             after,
@@ -290,7 +294,7 @@ impl QueryRoot {
             first,
             last,
             DeerEntryStatus::Pending,
-            None
+            None,
         )
         .await
     }
@@ -301,11 +305,11 @@ impl QueryRoot {
         before: Option<UuidScalar>,
         first: Option<i64>,
         last: Option<i64>,
-        id: Option<UuidScalar>
+        id: Option<UuidScalar>,
     ) -> Result<Vec<DeerConnection>> {
-        let after = after.map(|x|x.into());
-        let before = before.map(|x|x.into());
-        let id: Option<Uuid> = id.map(|x|x.into());
+        let after = after.map(|x| x.into());
+        let before = before.map(|x| x.into());
+        let id: Option<Uuid> = id.map(|x| x.into());
         deer_page(
             context,
             after,
@@ -313,7 +317,7 @@ impl QueryRoot {
             first,
             last,
             DeerEntryStatus::Rejected,
-            id
+            id,
         )
         .await
     }
@@ -386,11 +390,7 @@ impl MutationRoot {
         Ok(deer)
     }
 
-    async fn resubmit_deer(
-        &self,
-        context: &Context<'_>,
-        id: UuidScalar,
-    ) -> Result<Deer> {
+    async fn resubmit_deer(&self, context: &Context<'_>, id: UuidScalar) -> Result<Deer> {
         let id: Uuid = id.into();
         let deer = query_as("UPDATE Cervidae SET status = $1 WHERE id = $2 RETURNING *")
             .bind(DeerEntryStatus::Pending)
@@ -775,5 +775,29 @@ impl MutationRoot {
         context.append_http_header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?);
 
         return Ok(token);
+    }
+
+    async fn get_upload_url(
+        &self,
+        ctx: &Context<'_>,
+        content_type: String,
+    ) -> async_graphql::Result<String> {
+        let s3_client = ctx.data::<Client>()?;
+        let bucket_name = std::env::var("AWS_S3_BUCKET").expect("AWS_S3_BUCKET must be set");
+        let key = format!(
+            "uploads/{}-{}",
+            chrono::Utc::now().timestamp(),
+            Uuid::new_v4()
+        );
+
+        let presigned_request = s3_client
+            .put_object()
+            .bucket(&bucket_name)
+            .key(&key)
+            .content_type(content_type)
+            .presigned(PresigningConfig::expires_in(Duration::from_secs(300))?)
+            .await?;
+
+        Ok(presigned_request.uri().to_string())
     }
 }
