@@ -97,7 +97,6 @@ export default function Page(){
   const pageInfo = fetching ? null : dataToUse.length > 0 ? dataToUse[0].pageInfo : null;
   const items = fetching ? [] : dataToUse.length > 0 ? dataToUse[0].edges.map((edge: any) => edge.node) : [];
   const totalPages = fetching ? 0 : dataToUse.length > 0 ? Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage) : 0;
-  console.log(rejectedResult?.data?.deerRejectedConnections?.length > 0);
   /*if (fetching) return <p>Loading...</p>;*/
   return (
     <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
