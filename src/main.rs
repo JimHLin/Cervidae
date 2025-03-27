@@ -1,13 +1,14 @@
 use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
+use aws_config::{load_defaults, BehaviorVersion};
 use axum::{
     http::{header::HeaderValue, Response},
     response::{self, IntoResponse},
     routing::get,
     Extension, Json,
 };
+use dotenvy::dotenv;
 use graphql::{MutationRoot, QueryRoot};
 use sqlx::PgPool;
-use dotenvy::dotenv;
 use std::env;
 use tokio::net::TcpListener;
 use tower_cookies::{CookieManagerLayer, Cookies};
@@ -23,7 +24,11 @@ async fn graphiql() -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().ok();
+    // load .env.local
+    dotenvy::from_filename(".env.local").ok();
+    dotenv().ok();
+    let config = load_defaults(BehaviorVersion::v2025_01_17()).await;
+    let client = aws_sdk_s3::Client::new(&config);
     // initialize tracing
     tracing_subscriber::fmt::init();
     // configure cors for testing, remove in production
@@ -38,6 +43,7 @@ async fn main() {
 
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(pool)
+        .data(client)
         .finish();
 
     async fn graphql_handler(
