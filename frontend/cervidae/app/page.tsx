@@ -5,12 +5,39 @@ import { useAuth } from "@/ui/auth-provider";
 import { useState, useCallback } from "react";
 import Switch from "@/ui/switch";
 import Link from "next/link";
+import { useMutation, useQuery as useTanstackQuery } from "@tanstack/react-query"
+const axios = require('axios').default;
+
+
 export default function Page(){
   enum status{
     Approved,
     Pending,
     Rejected
   }
+  const endpoint = "http://localhost:1234";
+  
+  const DEER_ALL_QUERY = `
+    query {
+      deerAll {
+        name
+      }
+    }
+  `;
+  
+  const fetchDeerAll = async () => {
+    const response = await axios.post(endpoint, {
+      query: DEER_ALL_QUERY,
+    });
+    return response.data.data.deerAll;
+  };
+  const { data: deerAll, error: deerAllError, isLoading: deerAllLoading } = useTanstackQuery({
+    queryKey: ["deerAll"],
+    queryFn: fetchDeerAll,
+  });
+  console.log(deerAll);
+
+
   const entriesPerPage = 2;
   const { isAuthenticated, isAdmin, userId } = useAuth();
   const [seeStatus, setSeeStatus] = useState(status.Approved);
