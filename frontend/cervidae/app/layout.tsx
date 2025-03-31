@@ -3,6 +3,8 @@ import './globals.css'
 import ClientProvider from "@/ui/client-provider";
 import { AuthProvider } from "@/ui/auth-provider";
 import Header from "@/ui/header";
+import { TanstackProvider } from "@/ui/tanstack-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -11,6 +13,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+          <TanstackProvider>
           <ClientProvider>
           <AuthProvider>
             <Header />
@@ -25,6 +28,7 @@ export default function RootLayout({
         </div>
         </AuthProvider>
     </ClientProvider>
+    </TanstackProvider>
       </body>
     </html>
     
