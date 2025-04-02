@@ -69,7 +69,7 @@ export default function CreateDeerForm() {
     if (createRes.error) {
       console.error("Mutation failed:", createRes.error);
     } else {
-      //router.push('/');
+      router.push('/');
     }
   };
   
