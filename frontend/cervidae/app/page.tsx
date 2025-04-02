@@ -17,36 +17,11 @@ export default function Page(){
   }
   const endpoint = "http://localhost:1234";
   
-  const DEER_ALL_QUERY = `
-    query {
-      deerAll {
-        name
-      }
-    }
-  `;
-  
-  const fetchDeerAll = async () => {
-    const response = await axios.post(endpoint, {
-      query: DEER_ALL_QUERY,
-    });
-    return response.data.data.deerAll;
-  };
-  const { data: deerAll, error: deerAllError, isLoading: deerAllLoading } = useTanstackQuery({
-    queryKey: ["deerAll"],
-    queryFn: fetchDeerAll,
-  });
-  console.log(deerAll);
-
-
-  const entriesPerPage = 2;
-  const { isAuthenticated, isAdmin, userId } = useAuth();
-  const [seeStatus, setSeeStatus] = useState(status.Approved);
-  const testQuery = gql`
-    query ($first: Int, $after: String, $last: Int, $before: String${seeStatus == status.Rejected? ", $id: UuidScalar" : ""}) {
-        ${seeStatus == status.Approved ? "deerConnections" : seeStatus == status.Pending ? "deerPendingConnections" : "deerRejectedConnections"}
-        (first: $first, after: $after, last: $last, before: $before${seeStatus == status.Rejected? ", id: $id" : ""}) {
-          edges{
-            node{
+  const DEER_APPROVED_CONNECTION_QUERY = `
+    query ($first: Int, $after: String, $last: Int, $before: String) {
+      deerConnections(first: $first, after: $after, last: $last, before: $before) {
+        edges{
+          node{
               id
               name
               imageUrl
@@ -62,6 +37,49 @@ export default function Page(){
         }
       }
     `;
+
+  const DEER_PENDING_CONNECTION_QUERY = `
+    query ($first: Int, $after: String, $last: Int, $before: String) {
+      deerPendingConnections(first: $first, after: $after, last: $last, before: $before) {
+        edges{
+          node{
+            id
+            name
+            imageUrl
+            description
+            killCount
+          }
+        }
+        pageInfo{
+          hasNextPage
+          hasPreviousPage
+          totalCount
+        }
+      }
+    }
+  `;
+
+  const DEER_REJECTED_CONNECTION_QUERY = `
+    query ($first: Int, $after: String, $last: Int, $before: String, $id: UuidScalar) {
+      deerRejectedConnections(first: $first, after: $after, last: $last, before: $before, id: $id) {
+        edges{
+          node{
+            id
+            name
+            imageUrl
+            description
+            killCount
+          }
+        }
+        pageInfo{
+          hasNextPage
+          hasPreviousPage
+          totalCount
+        }
+      }
+    }
+  `;
+
   const rejectedQuery = gql`
   query($userId: UuidScalar!){
   deerRejectedConnections(id: $userId, first: 1){
@@ -70,20 +88,20 @@ export default function Page(){
     }
   }
 }`;
+  
+
+  const entriesPerPage = 2;
+  const { isAuthenticated, isAdmin, userId } = useAuth();
+  const [seeStatus, setSeeStatus] = useState(status.Approved);
   const [after, setAfter] = useState<string | null>(null);
   const [before, setBefore] = useState<string | null>(null);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [testResult, testExecuteQuery] = useQuery({
-    query: testQuery,
-    variables: direction === "forward"
-      ? { first: entriesPerPage, after }
-      : { last: entriesPerPage, before },
-  });
   const [rejectedResult, setRejectedResult] = useQuery({
     query: rejectedQuery,
     variables: {userId: userId}
   })
+  const [currentPage, setCurrentPage] = useState(1);
+
 
   const handleNext = () => {
     if (pageInfo?.hasNextPage) {
@@ -117,13 +135,34 @@ export default function Page(){
     setDirection("forward");
     setCurrentPage(1);
   }
-  const { data, fetching, error } = testResult;
+  const fetchDeerAll = async () => {
+    const response = await axios.post(endpoint, {
+      query: seeStatus == status.Approved ? DEER_APPROVED_CONNECTION_QUERY : seeStatus == status.Pending ? DEER_PENDING_CONNECTION_QUERY : DEER_REJECTED_CONNECTION_QUERY,
+      variables: {
+        first: 2,
+        after: null,
+        last: null,
+        before: null,
+        id: userId
+      }
+    });
+    let data = response.data.data;
+    switch(seeStatus){
+      case status.Approved: return data.deerConnections;
+      case status.Pending: return data.deerPendingConnections;
+      case status.Rejected: return data.deerRejectedConnections;
+      default: return [];
+    }
+  };
+  const { data: deerConnections, error: deerConnectionsError, isLoading: deerConnectionsLoading } = useTanstackQuery({
+    queryKey: [seeStatus, userId],
+    queryFn: fetchDeerAll,
+  });
 
-  const dataToUse = error ? [] : 
-  seeStatus == status.Pending ? data?.deerPendingConnections : seeStatus == status.Rejected ? data?.deerRejectedConnections : data?.deerConnections;
-  const pageInfo = fetching ? null : dataToUse.length > 0 ? dataToUse[0].pageInfo : null;
-  const items = fetching ? [] : dataToUse.length > 0 ? dataToUse[0].edges.map((edge: any) => edge.node) : [];
-  const totalPages = fetching ? 0 : dataToUse.length > 0 ? Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage) : 0;
+  const dataToUse = deerConnectionsLoading ? [] : deerConnections;
+  const pageInfo = deerConnectionsLoading || dataToUse.length == 0 ? null : dataToUse[0].pageInfo;
+  const items = deerConnectionsLoading || dataToUse.length == 0 ? [] : dataToUse[0].edges.map((edge: any) => edge.node);
+  const totalPages = deerConnectionsLoading || dataToUse.length == 0 ? 0 : Math.ceil(dataToUse[0].pageInfo.totalCount / entriesPerPage);
   /*if (fetching) return <p>Loading...</p>;*/
   return (
     <div className="flex flex-col items-center justify-center w-10/12 m-auto pt-16 gap-5">
@@ -149,11 +188,11 @@ export default function Page(){
         ))}
       </div>
         <div className="flex flex-row justify-center items-center gap-4">
-          <button onClick={handlePrevious} disabled={fetching || currentPage === 1} className="bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-500">
+          <button onClick={handlePrevious} disabled={deerConnectionsLoading || currentPage === 1} className="bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-500">
             Previous
           </button>
           <p className="text-gray-500">{currentPage} of {totalPages}</p>
-          <button onClick={handleNext} disabled={fetching || currentPage === totalPages} className="bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-500">
+          <button onClick={handleNext} disabled={deerConnectionsLoading || currentPage === totalPages} className="bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-500">
             Next
           </button>
         </div>
